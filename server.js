@@ -80,87 +80,78 @@ const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const abs = value => Math.abs(num(value));
 function summarizeBudget(budget, transactions) {
   const envelopes = Array.isArray(budget?.envelopes) ? budget.envelopes : [];
+  const txs = Array.isArray(transactions?.transactions) ? transactions.transactions : null;
   const byCategory = new Map();
-  let income = 0, expenses = 0, transactionCount = 0;
-  let plannedExpenses = 0;
+  let income = 0, expenses = 0, transactionCount = 0, plannedExpenses = 0;
 
-  const addExpense = (name, amount, type, planned = null) => {
-    const key = String(name || "אחר").trim() || "אחר";
-    const current = byCategory.get(key) || {
-      name: key, type, actual: 0, planned: null, transactionCount: 0
-    };
-    current.actual += amount;
-    current.transactionCount += 1;
-    if (planned !== null) current.planned = (current.planned || 0) + planned;
-    byCategory.set(key, current);
-  };
-
-  for (const env of envelopes) {
-    const type = env.type || "other";
-    const actuals = Array.isArray(env.actuals) ? env.actuals : [];
-    const trackingName = env.details?.trackingCategory?.name;
-    const envelopeName = String(trackingName || env.name || env.title || "הוצאה קבועה");
-    const planned = Math.abs(num(env.balancedAmount ?? env.originalAmount));
-
-    // Savings goals are not expenses. Income envelopes are not part of the expense budget.
-    if (type === "riseupGoal" || type === "variableIncome") {
-      for (const tx of actuals) {
-        if (tx.isIncome || type === "variableIncome") income += abs(tx.incomeAmount);
-        transactionCount++;
-      }
-      if (type === "variableIncome" && !actuals.length) continue;
-      continue;
-    }
-
-    if (["fixed", "variable", "trackingCategory"].includes(type)) {
-      plannedExpenses += planned;
-    }
-
-    for (const tx of actuals) {
+  // Use the dedicated transactions endpoint for actual cashflow. It exposes
+  // the customer-facing category and exclusion flag, unlike budget envelopes.
+  if (txs) {
+    for (const tx of txs) {
+      if (tx.isExcluded) continue;
+      const amount = abs(tx.amount);
+      if (!amount) continue;
       transactionCount++;
       if (tx.isIncome) {
-        income += abs(tx.incomeAmount);
+        income += amount;
         continue;
       }
-      const amount = abs(tx.billingAmount);
-      if (!amount) continue;
       expenses += amount;
-
-      if (type === "variable") {
-        // RiseUp's variable envelope contains many everyday categories.
-        // Split it by the transaction's own category instead of showing one large "variable" bucket.
-        const transactionCategory = tx.expense || tx.categoryLabel || tx.category || "אחר";
-        addExpense(transactionCategory, amount, "variable");
-      } else if (type === "fixed" || type === "trackingCategory") {
-        // The envelope is the budgeted unit for fixed and tracked categories.
-        addExpense(envelopeName, amount, type, null);
-      } else {
-        addExpense(tx.expense || tx.categoryLabel || tx.category || envelopeName, amount, type);
-      }
+      const name = String(tx.categoryLabel || "אחר").trim() || "אחר";
+      const item = byCategory.get(name) || { name, type: tx.actualType || "other", actual: 0, transactionCount: 0 };
+      item.actual += amount;
+      item.transactionCount++;
+      byCategory.set(name, item);
     }
-
-    // Keep a zero-spend budget category visible so the user can see its unused budget.
-    if (["fixed", "trackingCategory"].includes(type) && !actuals.length && planned > 0) {
-      byCategory.set(envelopeName, {
-        name: envelopeName, type, actual: 0, planned, transactionCount: 0
-      });
+  } else {
+    // Fallback only when the transactions endpoint is unavailable.
+    for (const env of envelopes) {
+      const type = env.type || "other";
+      const actuals = Array.isArray(env.actuals) ? env.actuals : [];
+      const name = String(env.details?.trackingCategory?.name || env.name || env.title || "אחר");
+      for (const tx of actuals) {
+        if (tx.isExcluded) continue;
+        transactionCount++;
+        if (tx.isIncome) { income += abs(tx.incomeAmount); continue; }
+        const amount = abs(tx.billingAmount);
+        if (!amount) continue;
+        expenses += amount;
+        const category = String(tx.expense || name || "אחר");
+        const item = byCategory.get(category) || { name: category, type, actual: 0, transactionCount: 0 };
+        item.actual += amount;
+        item.transactionCount++;
+        byCategory.set(category, item);
+      }
     }
   }
 
-  const categories = [...byCategory.values()].map(c => ({
-    ...c,
-    remaining: c.planned === null ? null : c.planned - c.actual,
-    utilization: c.planned > 0 ? Math.round(c.actual / c.planned * 100) : null,
-    share: expenses > 0 ? Math.round(c.actual / expenses * 100) : 0
-  })).sort((a,b)=>b.actual-a.actual);
+  const plannedByCategory = new Map();
+  for (const env of envelopes) {
+    const type = env.type || "other";
+    const planned = abs(env.balancedAmount ?? env.originalAmount);
+    if (["fixed", "variable", "trackingCategory"].includes(type)) plannedExpenses += planned;
+    // Only attach a plan to a category when RiseUp supplies a category-specific
+    // envelope. Never spread the aggregate variable budget across subcategories.
+    if (["fixed", "trackingCategory"].includes(type)) {
+      const name = String(env.details?.trackingCategory?.name || env.name || env.title || "").trim();
+      if (name) plannedByCategory.set(name, (plannedByCategory.get(name) || 0) + planned);
+    }
+  }
+
+  const categories = [...byCategory.values()].map(c => {
+    const planned = plannedByCategory.has(c.name) ? plannedByCategory.get(c.name) : null;
+    return {
+      ...c, planned,
+      remaining: planned === null ? null : planned - c.actual,
+      utilization: planned > 0 ? Math.round(c.actual / planned * 100) : null,
+      share: expenses > 0 ? Math.round(c.actual / expenses * 100) : 0
+    };
+  }).sort((x,y)=>y.actual-x.actual);
 
   return {
-    month: budget?.budgetDate || null,
-    lastUpdatedAt: budget?.lastUpdatedAt || null,
-    income, expenses, net: income - expenses,
-    plannedExpenses,
-    categories: categories.slice(0, 20),
-    transactionCount
+    month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
+    income, expenses, net: income-expenses, plannedExpenses,
+    categories: categories.slice(0,20), transactionCount
   };
 }
 
@@ -177,14 +168,15 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
     const previousMonth = monthInIsrael(-1);
     const currentBudget = await callRiseup("get_budget", { date: "current" });
     if (!currentBudget) return res.status(503).json({ error: "כלי התקציב אינו זמין. ודא שלמפתח RiseUp יש הרשאת budget:read." });
-    const [currentTransactions, previousBudget, balancesResult, benchmarksResult] = await Promise.all([
+    const [currentTransactions, previousBudget, previousTransactions, balancesResult, benchmarksResult] = await Promise.all([
       callRiseup("get_transactions", { cashflowMonth: currentMonth, maxTransactions: 5000 }).catch(() => null),
       callRiseup("get_budget", { date: "previous" }).catch(() => null),
+      callRiseup("get_transactions", { cashflowMonth: previousMonth, maxTransactions: 5000 }).catch(() => null),
       callRiseup("get_current_bank_balances_data").catch(() => null),
       callRiseup("get_benchmarks_data").catch(() => null)
     ]);
     const current = summarizeBudget(currentBudget, currentTransactions);
-    const previous = previousBudget ? summarizeBudget(previousBudget, null) : null;
+    const previous = previousBudget ? summarizeBudget(previousBudget, previousTransactions) : null;
     const balances = Array.isArray(balancesResult?.balances) ? balancesResult.balances.map(b => ({
       account: b.accountNickname || b.source || "חשבון", balance: num(b.balance), lastUpdated: b.lastUpdated || null
     })) : [];
@@ -197,7 +189,7 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
       current, previous: previous ? { month: previous.month || previousMonth, income: previous.income, expenses: previous.expenses, net: previous.net } : null,
       balances, totalBalance: balances.length ? balances.reduce((s,b)=>s+b.balance,0) : null,
       benchmarks, capabilities: {
-        budget: true, transactions: Boolean(currentTransactions),
+        budget: true, transactions: Boolean(currentTransactions?.transactions),
         balances: Boolean(balancesResult), benchmarks: Boolean(benchmarksResult)
       },
       generatedAt: new Date().toISOString()
