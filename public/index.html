@@ -122,7 +122,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
   </section>
   <section class="welcome" id="welcome"><span class="eyebrow"><span class="dot"></span> החשבון שלך מחובר</span><h1>היי דור 👋</h1><p>הנה תמונת מצב פשוטה של הכסף שלך. נסתכל יחד על מה נכנס, מה יצא ואיפה אפשר לשפר — צעד אחד בכל פעם.</p></section>
   <section class="dashboard" id="dashboard">
-    <div class="dash-head"><div><h2>התמונה שלך החודש</h2><div class="muted" id="dash-date">תמונת מצב עדכנית</div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="refresh" id="show-forecast">תחזית לסוף החודש ↗</button><button class="refresh" id="refresh-dashboard">↻ רענון</button></div></div><section class="panel hidden" id="forecast-panel" style="margin-bottom:12px"><div class="dash-head" style="margin:0 0 10px"><h3 style="margin:0">תחזית יתרות לסוף החודש</h3><button class="tiny" id="hide-forecast">סגירה ✕</button></div><div id="forecast-content" class="empty">טוען תחזית מ־RiseUp…</div></section>
+    <div class="dash-head"><div><h2>התמונה שלך החודש</h2><div class="muted" id="dash-date">תמונת מצב עדכנית</div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="refresh" id="refresh-dashboard">↻ רענון נתונים</button></div></div><section class="panel" id="forecast-panel" style="margin-bottom:12px"><div class="dash-head" style="margin:0 0 10px"><h3 style="margin:0">תחזית יתרות לסוף החודש</h3></div><div id="forecast-content" class="empty">טוען תחזית מ־RiseUp…</div></section>
     <div id="dash-loading" class="empty">טוען נתונים מ־RiseUp…</div><div id="dash-error" class="dash-error hidden"></div>
     <div id="dash-content" class="hidden">
       <div class="kpis"><div class="kpi"><div class="kpi-label">הוצאות החודש</div><div class="kpi-value" id="kpi-expenses">—</div><div class="kpi-note" id="kpi-expenses-note">ביצוע בפועל</div></div><div class="kpi"><div class="kpi-label">הכנסות החודש</div><div class="kpi-value" id="kpi-income">—</div><div class="kpi-note">לפי נתונים זמינים</div></div><div class="kpi"><div class="kpi-label">עודף / גירעון החודש</div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-note">הכנסות פחות הוצאות בפועל</div></div></div>
@@ -149,8 +149,8 @@ function showChat(){ $("#login").classList.add("hidden");$("#chat").classList.re
 const money=v=>new Intl.NumberFormat("he-IL",{style:"currency",currency:"ILS",maximumFractionDigits:0}).format(Number(v)||0);
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function loadForecast(){
- const panel=$("#forecast-panel"),content=$("#forecast-content"),button=$("#show-forecast");
- panel.classList.remove("hidden");content.textContent="טוען תחזית תזרים ותקציב משוריין מ־RiseUp…";button.disabled=true;
+ const panel=$("#forecast-panel"),content=$("#forecast-content");
+ panel.classList.remove("hidden");content.textContent="טוען תחזית תזרים ותקציב משוריין מ־RiseUp…";
  try{
   const r=await fetch("/api/forecast",{headers:{Authorization:"Bearer "+token},cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d.error||"טעינת התחזית נכשלה");
   if(!d.available){content.innerHTML='<div class="empty">RiseUp לא החזירה תחזית לחשבונות. ייתכן שנתוני הבנק לא עודכנו ביומיים האחרונים או שסוג האשראי אינו נתמך.</div>';return}
@@ -162,7 +162,7 @@ async function loadForecast(){
   const reserveValue=d.budgetReserveAvailable?money(d.totalReserved):"לא זמין";
   const availableValue=d.availableAfterBudgetReserve!==null?money(d.availableAfterBudgetReserve):"לא ניתן לחישוב";
   content.innerHTML='<div class="kpis" style="grid-template-columns:1fr 1fr;margin-bottom:12px"><div class="kpi"><div class="kpi-label">יתרה כוללת נוכחית</div><div class="kpi-value">'+money(d.totalCurrentBalance)+'</div></div><div class="kpi"><div class="kpi-label">יתרה צפויה אחרי חיובים ידועים וקבועים</div><div class="kpi-value" style="color:'+(d.totalPredictedBalance<0?'#ad5c45':'var(--green)')+'">'+money(d.totalPredictedBalance)+'</div></div><div class="kpi reserve-card"><button type="button" class="reserve-toggle" id="reserve-toggle" aria-expanded="false" aria-controls="reserve-details"><div class="reserve-topline"><div><div class="kpi-label">תקציב שנותר לשריון</div><div class="kpi-value">'+reserveValue+'</div></div><span class="reserve-chevron" aria-hidden="true">⌄</span></div><div class="reserve-topline" style="margin-top:8px"><span class="reserve-hint">הצג קטגוריות והוצאות משוריינות</span><span class="kpi-note">לחיצה לפתיחת פירוט</span></div></button><div class="reserve-details" id="reserve-details" hidden>'+(d.budgetReserveAvailable?('<div class="reserve-category"><div class="reserve-category-head"><span class="reserve-category-name">תקציבי קטגוריות</span><span class="reserve-category-amount">'+money(d.budgetReserveTotal)+' שמור</span></div><div class="reserve-category-meta"><span>יתרה לאחר הוצאות שכבר בוצעו</span></div></div>'+reserveRows):'<div class="empty">לא ניתן להציג פירוט כי נתוני העסקאות לא התקבלו.</div>')+'<div class="reserve-category"><div class="reserve-category-head"><span class="reserve-category-name">הוצאות קבועות חזויות</span><span class="reserve-category-amount">'+money(fixedReserveTotal)+' שמור</span></div>'+(fixedReserveRows||'<div class="empty">אין הוצאות קבועות חזויות להמשך החודש.</div>')+'</div></div></div><div class="kpi"><div class="kpi-label">יתרה פנויה אחרי שריון התקציב</div><div class="kpi-value" style="color:'+(d.availableAfterBudgetReserve!==null&&d.availableAfterBudgetReserve<0?'#ad5c45':'var(--green)')+'">'+availableValue+'</div><div class="kpi-note">אומדן שמרני לניהול ההוצאות שנותרו</div></div></div><div class="muted" style="margin-bottom:8px">תחזית ל־'+escapeHtml(d.futureDateForPrediction)+' · סך החשבונות שנכללו בלבד</div><h3>פירוט חשבונות</h3>'+rows+'<h3>עסקאות ידועות שיחויבו עד סוף החודש</h3>'+detailRows(d.knownTransactions||[])+'<h3>הכנסות והוצאות קבועות צפויות</h3>'+detailRows(d.fixedTransactions||[])+'<div class="insight"><small>היתרה הצפויה מבוססת על יתרות הבנק, עסקאות שכבר ידועות ל־RiseUp ותנועות קבועות חזויות. הסכום המשוריין מציג גם יתרות תקציב קטגוריות וגם הוצאות קבועות חזויות. הוצאות קבועות כבר נוכו בתחזית היתרה של RiseUp ולכן אינן מנוכות פעם נוספת בחישוב היתרה הפנויה. היתרה הפנויה היא תחזית פחות הסכום שנותר בתקציבי הקטגוריות. הוצאות משתנות עתידיות שאין להן יעד תקציבי אינן כלולות, והתחזית עשויה להשתנות.</small></div>';
- }catch(e){content.textContent=e.message}finally{button.disabled=false}
+ }catch(e){content.textContent="לא הצלחתי לטעון את התחזית: "+e.message}
 }
 
 const AMY_GOAL_KEY="kis-amy-savings-goal-v1";
@@ -227,7 +227,7 @@ async function loadDashboard(){
   $("#management-panel").innerHTML=lines.map(x=>'<div class="insight">'+escapeHtml(x)+'</div>').join("");$("#dash-foot").textContent="עודכן: "+new Date(d.generatedAt).toLocaleString("he-IL")+" · הנתונים תלויים בהרשאות RiseUp שלך.";
   renderAmyDashboard(d);
   $("#dash-content").classList.remove("hidden");
-  if(profile==="amy")await loadAmyForecast();
+  if(profile==="amy")await loadAmyForecast();else await loadForecast();
  }catch(e){$("#dash-error").textContent=e.message;$("#dash-error").classList.remove("hidden")}finally{$("#dash-loading").classList.add("hidden")}
 }
 document.addEventListener("click",e=>{const toggle=e.target.closest("#reserve-toggle");if(!toggle)return;const details=$("#reserve-details");const expanded=toggle.getAttribute("aria-expanded")==="true";toggle.setAttribute("aria-expanded",String(!expanded));details.hidden=expanded;});
@@ -238,8 +238,6 @@ $("#amy-goal-save").onclick=saveAmyGoal;
 $("#refresh-dashboard").onclick=loadDashboard;
 $("#amy-refresh").onclick=loadDashboard;
 
-$("#show-forecast").onclick=loadForecast;
-$("#hide-forecast").onclick=()=>$("#forecast-panel").classList.add("hidden");
 $("#logout").onclick=()=>{
   token="";
   profile="";
