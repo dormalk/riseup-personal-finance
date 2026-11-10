@@ -89,8 +89,8 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
   <p>בחרו את התצוגה שמתאימה לכם. הנתונים של שניכם משותפים ומגיעים מאותו חשבון RiseUp.</p>
   <div class="profile-prompt">מי נכנס עכשיו?</div>
   <div class="profile-choices">
-    <button type="button" class="profile-choice" id="choose-dor" aria-pressed="false" onclick="selectProfile('dor');connect()"><span class="profile-emoji">👨🏻</span><strong>דור</strong><span>תצוגה מלאה ומתקדמת</span></button>
-    <button type="button" class="profile-choice amy" id="choose-amy" aria-pressed="false" onclick="selectProfile('amy');connect()"><span class="profile-emoji">🌷</span><strong>איימי</strong><span>פשוט, ברור ומעודד</span></button>
+    <button type="button" class="profile-choice" id="choose-dor" aria-pressed="false"><span class="profile-emoji">👨🏻</span><strong>דור</strong><span>תצוגה מלאה ומתקדמת</span></button>
+    <button type="button" class="profile-choice amy" id="choose-amy" aria-pressed="false"><span class="profile-emoji">🌷</span><strong>איימי</strong><span>פשוט, ברור ומעודד</span></button>
   </div>
   <div class="login-form"><label for="key">מפתח הגישה הפרטי</label><input id="key" type="password" autocomplete="current-password" placeholder="הזינו מפתח גישה"><div class="error" id="login-error" role="status">הזינו את מפתח הגישה ולחצו על דור או איימי כדי להתחבר.</div></div>
 </section>
@@ -227,7 +227,49 @@ async function loadDashboard(){
 document.addEventListener("click",e=>{const toggle=e.target.closest("#reserve-toggle");if(!toggle)return;const details=$("#reserve-details");const expanded=toggle.getAttribute("aria-expanded")==="true";toggle.setAttribute("aria-expanded",String(!expanded));details.hidden=expanded;});
 async function connect(){if(busy)return;token=$("#key").value.trim();if(!profile){$("#login-error").textContent="בחרו דור או איימי כדי להתחבר.";return}if(!token){$("#login-error").textContent="יש להזין קודם את מפתח הגישה, ואז ללחוץ על דור או איימי.";$("#key").focus();return}busy=true;["dor","amy"].forEach(p=>$("#choose-"+p).disabled=true);$("#login-error").textContent="מתחבר…";setStatus("מתחבר…");try{const r=await fetch("/api/status",{headers:{Authorization:"Bearer "+token},cache:"no-store"});if(!r.ok)throw Error("ההתחברות נכשלה. בדקו את מפתח הגישה ונסו שוב.");const d=await r.json();showChat();setStatus("מחובר");addMessage("assistant",profile==="amy"?"איזה כיף, איימי! התחברנו לנתונים המשפחתיים 🌷 אני כאן כדי לעזור להבין את הכסף בפשטות ולמצוא יחד דרכים קטנות לחסוך.":"התחברתי ל־RiseUp בהצלחה. אפשר להתחיל לשאול אותי על התקציב וההוצאות שלך. הכלים הזמינים כרגע: "+d.tools.map(t=>t.name).join(", "));}catch(e){token="";$("#login-error").textContent=e.message;setStatus("לא מחובר")}finally{busy=false;["dor","amy"].forEach(p=>$("#choose-"+p).disabled=false)}}
 async function send(q){q=q.trim();if(!q||!token||busy)return;busy=true;history.push({role:"user",content:q});addMessage("user",q);$("#welcome").classList.add("hidden");$("#prompts").classList.add("hidden");$("#question").value="";$("#send").disabled=true;const typing=document.createElement("div");typing.className="typing";typing.textContent="כיס בודק את הנתונים ומנסח תשובה…";$("#messages").append(typing);typing.scrollIntoView({behavior:"smooth",block:"end"});try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({messages:history.slice(-12),profile}),cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d.error||"הבקשה נכשלה");history.push({role:"assistant",content:d.reply});addMessage("assistant",d.reply)}catch(e){addMessage("assistant","לא הצלחתי להשלים את הבקשה: "+e.message+"\nאפשר לנסות שוב או להתחיל שיחה חדשה.");history.pop()}finally{typing.remove();busy=false;$("#send").disabled=false;$("#question").focus()}}
-$("#amy-goal-save").onclick=saveAmyGoal;$("#refresh-dashboard").onclick=loadDashboard;$("#amy-refresh").onclick=loadDashboard;$("#amy-forecast").onclick=loadAmyForecast;$("#show-forecast").onclick=loadForecast;$("#hide-forecast").onclick=()=>$("#forecast-panel").classList.add("hidden");$("#logout").onclick=()=>{token="";profile="";history=[];["dor","amy"].forEach(p=>{const b=$("#choose-"+p);b.classList.remove("selected");b.setAttribute("aria-pressed","false")});$("#messages").replaceChildren();$("#amy-forecast-panel").classList.add("hidden");$("#amy-dashboard").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#prompts").innerHTML='<button class="prompt" data-q="תן לי תמונת מצב של התקציב שלי החודש"><strong>📊 תמונת מצב חודשית</strong><span>איך אני עומד בתקציב?</span></button><button class="prompt" data-q="באילו קטגוריות הוצאתי הכי הרבה החודש?"><strong>🧾 לאן הכסף הולך?</strong><span>הקטגוריות עם ההוצאות הגבוהות</span></button><button class="prompt" data-q="האם יש חריגות או הוצאות חריגות שכדאי שאכיר?"><strong>🔎 דברים שכדאי לשים לב אליהם</strong><span>חריגות והוצאות לא שגרתיות</span></button><button class="prompt" data-q="תן לי שלוש הצעות מעשיות לחיסכון על בסיס הנתונים שלי"><strong>🌱 איך אפשר לחסוך?</strong><span>רעיונות שמבוססים על הנתונים שלי</span></button>');$("#chat").classList.add("hidden");$("#login").classList.remove("hidden");$("#new-chat").classList.add("hidden");$("#logout").classList.add("hidden");$("#key").value="";setStatus("לא מחובר")};$("#key").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();connect()}});$("#ask").onsubmit=e=>{e.preventDefault();send($("#question").value)};$("#question").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#ask").requestSubmit()}});$("#question").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,160)+"px"});document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q));
+
+$("#amy-goal-save").onclick=saveAmyGoal;
+$("#refresh-dashboard").onclick=loadDashboard;
+$("#amy-refresh").onclick=loadDashboard;
+$("#amy-forecast").onclick=loadAmyForecast;
+$("#show-forecast").onclick=loadForecast;
+$("#hide-forecast").onclick=()=>$("#forecast-panel").classList.add("hidden");
+$("#logout").onclick=()=>{
+  token="";
+  profile="";
+  history=[];
+  ["dor","amy"].forEach(p=>{
+    const b=$("#choose-"+p);
+    b.classList.remove("selected");
+    b.setAttribute("aria-pressed","false");
+  });
+  $("#messages").replaceChildren();
+  $("#amy-forecast-panel").classList.add("hidden");
+  $("#amy-dashboard").classList.add("hidden");
+  $("#dashboard").classList.remove("hidden");
+  $("#prompts").innerHTML='<button class="prompt" data-q="תן לי תמונת מצב של התקציב שלי החודש"><strong>📊 תמונת מצב חודשית</strong><span>איך אני עומד בתקציב?</span></button><button class="prompt" data-q="באילו קטגוריות הוצאתי הכי הרבה החודש?"><strong>🧾 לאן הכסף הולך?</strong><span>הקטגוריות עם ההוצאות הגבוהות</span></button><button class="prompt" data-q="האם יש חריגות או הוצאות חריגות שכדאי שאכיר?"><strong>🔎 דברים שכדאי לשים לב אליהם</strong><span>חריגות והוצאות לא שגרתיות</span></button><button class="prompt" data-q="תן לי שלוש הצעות מעשיות לחיסכון על בסיס הנתונים שלי"><strong>🌱 איך אפשר לחסוך?</strong><span>רעיונות שמבוססים על הנתונים שלי</span></button>';
+  $("#chat").classList.add("hidden");
+  $("#login").classList.remove("hidden");
+  $("#new-chat").classList.add("hidden");
+  $("#logout").classList.add("hidden");
+  $("#key").value="";
+  setStatus("לא מחובר");
+};
+$("#choose-dor").addEventListener("click",()=>{selectProfile("dor");connect()});
+$("#choose-amy").addEventListener("click",()=>{selectProfile("amy");connect()});
+$("#key").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){e.preventDefault();connect()}
+});
+$("#ask").onsubmit=e=>{e.preventDefault();send($("#question").value)};
+$("#question").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#ask").requestSubmit()}
+});
+$("#question").addEventListener("input",e=>{
+  e.target.style.height="auto";
+  e.target.style.height=Math.min(e.target.scrollHeight,160)+"px";
+});
+document.querySelectorAll("[data-q]").forEach(b=>{b.onclick=()=>send(b.dataset.q)});
+
 $("#new-chat").onclick=()=>{if(busy)return;history=[];$("#messages").replaceChildren();$("#welcome").classList.toggle("hidden",profile==="amy");$("#prompts").classList.remove("hidden");$("#question").focus()};
 $("#install").onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("#install").classList.add("hidden")}else{alert("להתקנה: פתח את תפריט הדפדפן ובחר 'התקנת אפליקציה' או 'הוספה למסך הבית'.")}};
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#install").classList.remove("hidden")});window.addEventListener("appinstalled",()=>$("#install").classList.add("hidden"));
