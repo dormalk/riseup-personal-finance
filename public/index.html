@@ -340,7 +340,7 @@ $("#question").addEventListener("input",e=>{
   e.target.style.height="auto";
   e.target.style.height=Math.min(e.target.scrollHeight,160)+"px";
 });
-document.querySelectorAll("[data-q]").forEach(b=>{b.onclick=()=>send(b.dataset.q)});
+document.addEventListener("click",e=>{const b=e.target.closest("#prompts [data-q]");if(b)send(b.dataset.q)});
 
 $("#new-chat").onclick=()=>{if(busy)return;history=[];$("#messages").replaceChildren();$("#welcome").classList.toggle("hidden",profile==="amy");$("#prompts").classList.remove("hidden");$("#question").focus()};
 $("#install").onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("#install").classList.add("hidden")}else{alert("להתקנה: פתח את תפריט הדפדפן ובחר 'התקנת אפליקציה' או 'הוספה למסך הבית'.")}};
