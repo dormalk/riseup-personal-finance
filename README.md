@@ -50,3 +50,13 @@ Open http://localhost:3000.
 - Secrets belong only in Railway Variables, never in GitHub.
 - Keep this repository private and use a strong unique APP_ACCESS_TOKEN.
 - This initial version is intended for one user and does not provide multi-user accounts.
+
+
+## Install as a PWA
+
+The web app includes a web app manifest, service worker and custom SVG icon. After the latest deployment finishes, open the Railway HTTPS domain in a supported browser:
+- **Android / Chrome:** use the Install button when it appears, or Chrome menu → Install app.
+- **iPhone / iPad:** open the site in Safari → Share → Add to Home Screen.
+- **Desktop / Chrome or Edge:** use the install icon in the address bar or the browser menu → Install app.
+
+The service worker caches only the static app shell. API requests and financial data are never cached. Chat history exists only in the current page session and is not persisted by the server.
