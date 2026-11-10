@@ -99,7 +99,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 </section>
 <main class="main hidden" id="chat">
   <section class="amy-dashboard hidden" id="amy-dashboard">
-    <div class="amy-hero"><h2 id="amy-greeting">היי איימי 🌷</h2><p id="amy-summary">בואי נראה יחד איך הכסף שלנו מתנהל החודש.</p><div class="amy-actions"><button type="button" id="amy-refresh">↻ עדכון נתונים</button><button type="button" id="amy-forecast">תחזית לסוף החודש</button></div></div>
+    <div class="amy-hero"><h2 id="amy-greeting">היי איימי 🌷</h2><p id="amy-summary">בואי נראה יחד איך הכסף שלנו מתנהל החודש.</p><div class="amy-actions"><button type="button" id="amy-refresh">↻ עדכון נתונים</button><button type="button" id="amy-forecast" aria-controls="amy-forecast-panel">תחזית לסוף החודש</button></div></div>
     <div class="amy-kpis"><div class="amy-kpi"><div class="amy-kpi-label">כמה הוצאנו החודש</div><div class="amy-kpi-value" id="amy-expenses">—</div></div><div class="amy-kpi"><div class="amy-kpi-label">הכנסות החודש</div><div class="amy-kpi-value" id="amy-income">—</div></div><div class="amy-kpi"><div class="amy-kpi-label">המצב החודשי שלנו</div><div class="amy-kpi-value" id="amy-net">—</div></div><div class="amy-kpi"><div class="amy-kpi-label">נשאר בתקציבים שהוגדרו</div><div class="amy-kpi-value" id="amy-remaining">—</div></div></div>
     <div class="amy-goal">
       <div class="amy-goal-top"><h3>🎯 החלום הבא שלנו</h3><span id="amy-goal-percent" class="badge">0%</span></div>
@@ -234,7 +234,7 @@ async function send(q){q=q.trim();if(!q||!token||busy)return;busy=true;history.p
 $("#amy-goal-save").onclick=saveAmyGoal;
 $("#refresh-dashboard").onclick=loadDashboard;
 $("#amy-refresh").onclick=loadDashboard;
-$("#amy-forecast").onclick=loadAmyForecast;
+document.addEventListener("click",e=>{const button=e.target.closest("#amy-forecast");if(!button)return;e.preventDefault();loadAmyForecast();});
 $("#show-forecast").onclick=loadForecast;
 $("#hide-forecast").onclick=()=>$("#forecast-panel").classList.add("hidden");
 $("#logout").onclick=()=>{
