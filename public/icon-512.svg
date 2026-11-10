@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="116" fill="#102d24"/><path d="M146 172c0-25 20-45 45-45h130c25 0 45 20 45 45v168c0 25-20 45-45 45H191c-25 0-45-20-45-45V172Z" fill="#eaf4ed"/><path d="M191 127v-20c0-25 20-45 45-45h40c25 0 45 20 45 45v20" fill="none" stroke="#a8d6b8" stroke-width="22" stroke-linecap="round"/><path d="M202 231h108M202 276h72M202 321h92" stroke="#236b4d" stroke-width="20" stroke-linecap="round"/><circle cx="349" cy="348" r="53" fill="#58b47a"/><path d="M326 348l16 16 31-35" fill="none" stroke="#102d24" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#103c36"/><stop offset="1" stop-color="#087c68"/></linearGradient>
+ <linearGradient id="coin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe69a"/><stop offset="1" stop-color="#e9a92f"/></linearGradient>
+</defs>
+<rect width="512" height="512" rx="116" fill="url(#bg)"/>
+<circle cx="256" cy="267" r="158" fill="none" stroke="#ffffff" stroke-opacity=".13" stroke-width="18"/>
+<circle cx="256" cy="267" r="119" fill="url(#coin)"/>
+<circle cx="256" cy="267" r="98" fill="none" stroke="#b77c1e" stroke-opacity=".5" stroke-width="7"/>
+<path d="M310 202c-35-26-85-21-112 12-30 36-24 91 12 119 36 29 91 22 119-14 14-18 20-40 17-61h-77" fill="none" stroke="#10483e" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M255 145c-5-35 15-66 52-83 8 39-8 70-52 83Z" fill="#9ee6ad"/>
+<path d="M255 145c-29-30-63-31-91-12 20 32 53 42 91 12Z" fill="#5dc98d"/>
+<path d="M256 146v36" stroke="#10483e" stroke-width="11" stroke-linecap="round"/>
+<path d="M355 355l43 43" stroke="#eaf8ee" stroke-width="23" stroke-linecap="round"/>
+<circle cx="399" cy="399" r="20" fill="#eaf8ee"/>
+</svg>
