@@ -272,7 +272,7 @@ async function loadDashboard(){
  }catch(e){$("#dash-error").textContent=e.message;$("#dash-error").classList.remove("hidden")}finally{$("#dash-loading").classList.add("hidden")}
 }
 document.addEventListener("click",e=>{const toggle=e.target.closest("#reserve-toggle");if(!toggle)return;const details=$("#reserve-details");const expanded=toggle.getAttribute("aria-expanded")==="true";toggle.setAttribute("aria-expanded",String(!expanded));details.hidden=expanded;});
-async function connect(){if(busy)return;token=$("#key").value.trim();if(!profile){$("#login-error").textContent="בחרו דור או איימי כדי להתחבר.";return}if(!token){$("#login-error").textContent="יש להזין קודם את מפתח הגישה, ואז ללחוץ על דור או איימי.";$("#key").focus();return}busy=true;["dor","amy"].forEach(p=>$("#choose-"+p).disabled=true);$("#login-error").textContent="מתחבר…";setStatus("מתחבר…");try{const r=await fetch("/api/status",{headers:{Authorization:"Bearer "+token},cache:"no-store"});if(!r.ok)throw Error("ההתחברות נכשלה. בדקו את מפתח הגישה ונסו שוב.");const d=await r.json();showChat();setStatus("מחובר");addMessage("assistant",profile==="amy"?"איזה כיף, איימי! התחברנו לנתונים המשפחתיים 🌷 אני כאן כדי לעזור להבין את הכסף בפשטות ולמצוא יחד דרכים קטנות לחסוך.":"התחברתי ל־RiseUp בהצלחה. אפשר להתחיל לשאול אותי על התקציב וההוצאות שלך. הכלים הזמינים כרגע: "+d.tools.map(t=>t.name).join(", "));}catch(e){token="";$("#login-error").textContent=e.message;setStatus("לא מחובר")}finally{busy=false;["dor","amy"].forEach(p=>$("#choose-"+p).disabled=false)}}
+async function connect(){if(busy)return;token=$("#key").value.trim();if(!profile){$("#login-error").textContent="בחרו דור או איימי כדי להתחבר.";return}if(!token){$("#login-error").textContent="יש להזין קודם את מפתח הגישה, ואז ללחוץ על דור או איימי.";$("#key").focus();return}busy=true;["dor","amy"].forEach(p=>$("#choose-"+p).disabled=true);$("#login-error").textContent="מתחבר…";setStatus("מתחבר…");try{const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token}),credentials:"same-origin",cache:"no-store"});if(!r.ok)throw Error("ההתחברות נכשלה. בדקו את מפתח הגישה ונסו שוב.");localStorage.setItem("kis-profile",profile);token="";$("#key").value="";showChat();setStatus("מחובר");addMessage("assistant",profile==="amy"?"איזה כיף, איימי! התחברנו לנתונים המשפחתיים 🌷 אני כאן כדי לעזור להבין את הכסף בפשטות ולמצוא יחד דרכים קטנות לחסוך.":"התחברתי ל־RiseUp בהצלחה. אפשר להתחיל לשאול אותי על התקציב וההוצאות שלך.");}catch(e){token="";$("#login-error").textContent=e.message;setStatus("לא מחובר")}finally{busy=false;["dor","amy"].forEach(p=>$("#choose-"+p).disabled=false)}}
 async function send(q){q=q.trim();if(!q||!token||busy)return;busy=true;history.push({role:"user",content:q});addMessage("user",q);$("#welcome").classList.add("hidden");$("#prompts").classList.add("hidden");$("#question").value="";$("#send").disabled=true;const typing=document.createElement("div");typing.className="typing";typing.textContent="כיס בודק את הנתונים ומנסח תשובה…";$("#messages").append(typing);typing.scrollIntoView({behavior:"smooth",block:"end"});try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({messages:history.slice(-12),profile}),cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d.error||"הבקשה נכשלה");history.push({role:"assistant",content:d.reply});addMessage("assistant",d.reply)}catch(e){addMessage("assistant","לא הצלחתי להשלים את הבקשה: "+e.message+"\nאפשר לנסות שוב או להתחיל שיחה חדשה.");history.pop()}finally{typing.remove();busy=false;$("#send").disabled=false;$("#question").focus()}}
 
 $("#amy-goal-save").onclick=saveAmyGoal;
@@ -280,6 +280,8 @@ $("#refresh-dashboard").onclick=loadDashboard;
 $("#amy-refresh").onclick=loadDashboard;
 
 $("#logout").onclick=()=>{
+  fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}).catch(()=>{});
+  localStorage.removeItem("kis-profile");
   token="";
   profile="";
   history=[];
@@ -319,5 +321,18 @@ $("#new-chat").onclick=()=>{if(busy)return;history=[];$("#messages").replaceChil
 $("#install").onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("#install").classList.add("hidden")}else{alert("להתקנה: פתח את תפריט הדפדפן ובחר 'התקנת אפליקציה' או 'הוספה למסך הבית'.")}};
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#install").classList.remove("hidden")});window.addEventListener("appinstalled",()=>$("#install").classList.add("hidden"));
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+async function restoreSession(){
+  try {
+    const savedProfile=localStorage.getItem("kis-profile");
+    if(!["dor","amy"].includes(savedProfile)) return;
+    const r=await fetch("/api/status",{credentials:"same-origin",cache:"no-store"});
+    if(!r.ok) { localStorage.removeItem("kis-profile"); return; }
+    profile=savedProfile;
+    showChat();
+    setStatus("מחובר");
+  } catch {}
+}
+restoreSession();
+
 </script>
 </body></html>
