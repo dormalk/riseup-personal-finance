@@ -80,45 +80,87 @@ const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const abs = value => Math.abs(num(value));
 function summarizeBudget(budget, transactions) {
   const envelopes = Array.isArray(budget?.envelopes) ? budget.envelopes : [];
-  const categories = [];
+  const byCategory = new Map();
   let income = 0, expenses = 0, transactionCount = 0;
+  let plannedExpenses = 0;
+
+  const addExpense = (name, amount, type, planned = null) => {
+    const key = String(name || "אחר").trim() || "אחר";
+    const current = byCategory.get(key) || {
+      name: key, type, actual: 0, planned: null, transactionCount: 0
+    };
+    current.actual += amount;
+    current.transactionCount += 1;
+    if (planned !== null) current.planned = (current.planned || 0) + planned;
+    byCategory.set(key, current);
+  };
+
   for (const env of envelopes) {
     const type = env.type || "other";
     const actuals = Array.isArray(env.actuals) ? env.actuals : [];
-    const tracking = env.details?.trackingCategory;
-    const name = String(
-      tracking?.name || env.name || env.title || env.category ||
-      actuals.find(tx => tx.expense)?.expense || "קטגוריה"
-    );
-    let actual = 0;
-    for (const tx of actuals) {
-      if (tx.isIncome) income += abs(tx.incomeAmount);
-      else {
-        const amount = abs(tx.billingAmount);
-        actual += amount;
-        expenses += amount;
+    const trackingName = env.details?.trackingCategory?.name;
+    const envelopeName = String(trackingName || env.name || env.title || "הוצאה קבועה");
+    const planned = Math.abs(num(env.balancedAmount ?? env.originalAmount));
+
+    // Savings goals are not expenses. Income envelopes are not part of the expense budget.
+    if (type === "riseupGoal" || type === "variableIncome") {
+      for (const tx of actuals) {
+        if (tx.isIncome || type === "variableIncome") income += abs(tx.incomeAmount);
+        transactionCount++;
       }
-      transactionCount++;
+      if (type === "variableIncome" && !actuals.length) continue;
+      continue;
     }
+
     if (["fixed", "variable", "trackingCategory"].includes(type)) {
-      // balancedAmount is the current plan (signed for expenses); originalAmount
-      // is only the original plan before the customer's adjustments.
-      const planned = abs(env.balancedAmount ?? env.originalAmount);
-      categories.push({
-        name, type, planned, actual, remaining: planned - actual,
-        utilization: planned > 0 ? Math.round(actual / planned * 100) : null
+      plannedExpenses += planned;
+    }
+
+    for (const tx of actuals) {
+      transactionCount++;
+      if (tx.isIncome) {
+        income += abs(tx.incomeAmount);
+        continue;
+      }
+      const amount = abs(tx.billingAmount);
+      if (!amount) continue;
+      expenses += amount;
+
+      if (type === "variable") {
+        // RiseUp's variable envelope contains many everyday categories.
+        // Split it by the transaction's own category instead of showing one large "variable" bucket.
+        const transactionCategory = tx.expense || tx.categoryLabel || tx.category || "אחר";
+        addExpense(transactionCategory, amount, "variable");
+      } else if (type === "fixed" || type === "trackingCategory") {
+        // The envelope is the budgeted unit for fixed and tracked categories.
+        addExpense(envelopeName, amount, type, null);
+      } else {
+        addExpense(tx.expense || tx.categoryLabel || tx.category || envelopeName, amount, type);
+      }
+    }
+
+    // Keep a zero-spend budget category visible so the user can see its unused budget.
+    if (["fixed", "trackingCategory"].includes(type) && !actuals.length && planned > 0) {
+      byCategory.set(envelopeName, {
+        name: envelopeName, type, actual: 0, planned, transactionCount: 0
       });
     }
   }
-  categories.sort((a,b)=>b.actual-a.actual);
-  const planExpenses = categories.reduce((sum,c)=>sum+c.planned,0);
-  const planIncome = envelopes.filter(e=>e.type==="variableIncome")
-    .reduce((sum,e)=>sum+abs(e.balancedAmount ?? e.originalAmount),0);
+
+  const categories = [...byCategory.values()].map(c => ({
+    ...c,
+    remaining: c.planned === null ? null : c.planned - c.actual,
+    utilization: c.planned > 0 ? Math.round(c.actual / c.planned * 100) : null,
+    share: expenses > 0 ? Math.round(c.actual / expenses * 100) : 0
+  })).sort((a,b)=>b.actual-a.actual);
+
   return {
-    month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
-    income, expenses, net: income-expenses, plannedExpenses: planExpenses,
-    plannedIncome: planIncome, categories: categories.slice(0,12),
-    transactionCount: transactionCount || (Array.isArray(transactions?.transactions) ? transactions.transactions.length : 0)
+    month: budget?.budgetDate || null,
+    lastUpdatedAt: budget?.lastUpdatedAt || null,
+    income, expenses, net: income - expenses,
+    plannedExpenses,
+    categories: categories.slice(0, 20),
+    transactionCount
   };
 }
 
