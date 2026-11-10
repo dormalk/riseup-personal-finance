@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "כיס — העוזר הפיננסי שלך",
+  "short_name": "כיס",
+  "description": "העוזר הפיננסי האישי שלך, מחובר ל־RiseUp",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f8f5",
+  "theme_color": "#102d24",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
