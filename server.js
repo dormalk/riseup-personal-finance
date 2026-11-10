@@ -29,10 +29,19 @@ app.use(express.static(path.join(root, "public"), { etag: false, maxAge: 0 }));
 
 const limiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
 
-function authorized(req) {
-  const a = Buffer.from(req.get("authorization") || "");
-  const b = Buffer.from("Bearer " + process.env.APP_ACCESS_TOKEN);
+function matchesAccessToken(value) {
+  if (typeof value !== "string" || !value) return false;
+  const a = Buffer.from(value);
+  const b = Buffer.from(process.env.APP_ACCESS_TOKEN);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+function authorized(req) {
+  const header = req.get("authorization") || "";
+  const bearer = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const cookieMatch = (req.headers.cookie || "").match(new RegExp("(?:^|;\\s*)kis_session=([^;]*)"));
+  let cookieToken = "";
+  try { cookieToken = cookieMatch ? decodeURIComponent(cookieMatch[1]) : ""; } catch {}
+  return matchesAccessToken(bearer) || matchesAccessToken(cookieToken);
 }
 function auth(req, res, next) {
   if (!authorized(req)) return res.status(401).json({ error: "מפתח גישה שגוי או חסר." });
@@ -161,6 +170,20 @@ function summarizeBudget(budget, transactions) {
 }
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
+app.post("/api/login", limiter, (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  if (!matchesAccessToken(req.body?.token)) {
+    return res.status(401).json({ error: "מפתח גישה שגוי או חסר." });
+  }
+  res.setHeader("Set-Cookie", "kis_session=" + encodeURIComponent(process.env.APP_ACCESS_TOKEN) + "; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000");
+  res.json({ connected: true });
+});
+app.post("/api/logout", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Set-Cookie", "kis_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
+  res.json({ connected: false });
+});
+
 app.get("/api/status", limiter, auth, (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json({ connected: true, tools: riseupTools.map(t => ({ name: t.name, description: t.description })) });
