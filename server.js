@@ -90,35 +90,34 @@ function summarizeBudget(budget, transactions) {
       tracking?.name || env.name || env.title || env.category ||
       actuals.find(tx => tx.expense)?.expense || "קטגוריה"
     );
-    const isSavingsGoal = tracking?.trackingCategoryType === "saving";
     let actual = 0;
     for (const tx of actuals) {
-      if (tx.isIncome) {
-        income += abs(tx.incomeAmount);
-      } else {
+      if (tx.isIncome) income += abs(tx.incomeAmount);
+      else {
         const amount = abs(tx.billingAmount);
         actual += amount;
-        if (!isSavingsGoal) expenses += amount;
+        expenses += amount;
       }
       transactionCount++;
     }
-    if (["fixed", "variable", "trackingCategory"].includes(type) && !isSavingsGoal) {
-      // originalAmount is the current plan. balancedAmount is deprecated and
-      // can be zero for tracked categories even when a real target exists.
-      const planned = env.originalAmount == null ? null : abs(env.originalAmount);
+    if (["fixed", "variable", "trackingCategory"].includes(type)) {
+      // balancedAmount is the current plan (signed for expenses); originalAmount
+      // is only the original plan before the customer's adjustments.
+      const planned = abs(env.balancedAmount ?? env.originalAmount);
       categories.push({
-        name, type, planned, actual,
-        remaining: planned == null ? null : planned - actual,
+        name, type, planned, actual, remaining: planned - actual,
         utilization: planned > 0 ? Math.round(actual / planned * 100) : null
       });
     }
   }
   categories.sort((a,b)=>b.actual-a.actual);
-  const planExpenses = categories.reduce((sum,c)=>sum+(c.planned ?? 0),0);
+  const planExpenses = categories.reduce((sum,c)=>sum+c.planned,0);
+  const planIncome = envelopes.filter(e=>e.type==="variableIncome")
+    .reduce((sum,e)=>sum+abs(e.balancedAmount ?? e.originalAmount),0);
   return {
     month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
     income, expenses, net: income-expenses, plannedExpenses: planExpenses,
-    plannedIncome: null, categories: categories.slice(0,12),
+    plannedIncome: planIncome, categories: categories.slice(0,12),
     transactionCount: transactionCount || (Array.isArray(transactions?.transactions) ? transactions.transactions.length : 0)
   };
 }
