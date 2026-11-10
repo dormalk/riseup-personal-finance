@@ -247,12 +247,19 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
       .filter(c => c.planned !== null && c.planned > 0)
       .map(c => ({ name: c.name, planned: c.planned, actual: c.actual, remaining: c.remaining }));
     const budgetReserveTotal = budgetSummary.budgetReserveTotal;
+    // Fixed expenses are already deducted by RiseUp from the predicted balance.
+    // Include them in the reserve display, but do not deduct them a second time.
+    const fixedExpenseTransactions = fixedTransactions.filter(t => !t.isIncome);
+    const fixedExpenseReserveTotal = fixedExpenseTransactions.reduce((sum, t) => sum + abs(t.amount), 0);
+    const totalReserved = budgetReserveTotal + fixedExpenseReserveTotal;
     res.json({
       month, futureDateForPrediction, accounts,
       totalCurrentBalance, totalPredictedBalance,
-      knownTransactions, fixedTransactions,
+      knownTransactions, fixedTransactions, fixedExpenseTransactions,
       budgetReserveAvailable: budgetSummary.transactionsAvailable,
       budgetReserveTotal: budgetSummary.transactionsAvailable ? budgetReserveTotal : null,
+      fixedExpenseReserveTotal,
+      totalReserved: budgetSummary.transactionsAvailable ? totalReserved : null,
       availableAfterBudgetReserve: budgetSummary.transactionsAvailable && totalPredictedBalance !== null
         ? totalPredictedBalance - budgetReserveTotal : null,
       reserveCategories,
