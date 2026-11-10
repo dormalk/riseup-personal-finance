@@ -80,48 +80,41 @@ const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const abs = value => Math.abs(num(value));
 function summarizeBudget(budget, transactions) {
   const envelopes = Array.isArray(budget?.envelopes) ? budget.envelopes : [];
-  const txs = Array.isArray(transactions?.transactions) ? transactions.transactions : [];
-  const categoryMap = new Map();
-  let income = 0, expenses = 0;
-  for (const tx of txs) {
-    if (tx.isExcluded || tx.excluded) continue;
-    const amount = abs(tx.amount ?? tx.billingAmount ?? tx.incomeAmount);
-    if (tx.isIncome) { income += amount; continue; }
-    expenses += amount;
-    const category = String(tx.category || tx.expense || tx.categoryName || tx.envelopeName || "ללא קטגוריה");
-    categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
-  }
-  if (!txs.length) {
-    for (const env of envelopes) {
-      for (const tx of (env.actuals || [])) {
-        if (tx.isIncome) income += abs(tx.incomeAmount);
-        else {
-          const amount = abs(tx.billingAmount);
-          expenses += amount;
-          const category = String(env.name || env.title || env.category || env.envelopeName || "קטגוריה");
-          categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
-        }
+  const categories = [];
+  let income = 0, expenses = 0, transactionCount = 0;
+  for (const env of envelopes) {
+    const name = String(env.name || env.title || env.category || env.envelopeName || env.expense || "קטגוריה");
+    const type = env.type || "other";
+    const actuals = Array.isArray(env.actuals) ? env.actuals : [];
+    let actual = 0;
+    for (const tx of actuals) {
+      if (tx.isIncome) income += abs(tx.incomeAmount);
+      else {
+        const amount = abs(tx.billingAmount);
+        actual += amount;
+        expenses += amount;
       }
+      transactionCount++;
+    }
+    if (["fixed", "variable", "trackingCategory"].includes(type)) {
+      categories.push({
+        name, type, planned: abs(env.balancedAmount ?? env.originalAmount),
+        actual, remaining: abs(env.balancedAmount ?? env.originalAmount) - actual,
+        utilization: abs(env.balancedAmount ?? env.originalAmount) > 0
+          ? Math.round(actual / abs(env.balancedAmount ?? env.originalAmount) * 100) : null
+      });
     }
   }
-  const categories = envelopes
-    .filter(e => ["fixed", "variable"].includes(e.type))
-    .map(e => {
-      const name = String(e.name || e.title || e.category || e.envelopeName || "קטגוריה");
-      const planned = abs(e.balancedAmount ?? e.originalAmount);
-      const actual = categoryMap.get(name) || 0;
-      return { name, type: e.type, planned, actual, remaining: planned - actual,
-        utilization: planned > 0 ? Math.round(actual / planned * 100) : null };
-    });
-  for (const [name, actual] of categoryMap) {
-    if (!categories.some(c => c.name === name)) categories.push({ name, type: "other", planned: 0, actual, remaining: -actual, utilization: null });
-  }
-  categories.sort((a,b) => b.actual-a.actual);
-  const planExpenses = categories.reduce((s,c)=>s+c.planned,0);
-  const planIncome = envelopes.filter(e=>e.type==="variableIncome").reduce((s,e)=>s+abs(e.balancedAmount ?? e.originalAmount),0);
-  return { month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
-    income, expenses, net: income-expenses, plannedExpenses: planExpenses, plannedIncome: planIncome,
-    categories: categories.slice(0,12), transactionCount: txs.length };
+  categories.sort((a,b)=>b.actual-a.actual);
+  const planExpenses = categories.reduce((sum,c)=>sum+c.planned,0);
+  const planIncome = envelopes.filter(e=>e.type==="variableIncome")
+    .reduce((sum,e)=>sum+abs(e.balancedAmount ?? e.originalAmount),0);
+  return {
+    month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
+    income, expenses, net: income-expenses, plannedExpenses: planExpenses,
+    plannedIncome: planIncome, categories: categories.slice(0,12),
+    transactionCount: transactionCount || (Array.isArray(transactions?.transactions) ? transactions.transactions.length : 0)
+  };
 }
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
