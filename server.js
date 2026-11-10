@@ -212,7 +212,7 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
     }
     const budget = await callRiseup("get_budget", { date: "current" });
     const month = String(budget?.budgetDate || monthInIsrael(0));
-    const match = /^(\\d{4})-(\\d{2})$/.exec(month);
+    const match = /^(\d{4})-(\d{2})$/.exec(month);
     if (!match) throw new Error("Invalid RiseUp budget month");
     const year = Number(match[1]), monthNumber = Number(match[2]);
     const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
