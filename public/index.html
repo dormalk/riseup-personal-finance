@@ -99,8 +99,8 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 </section>
 <main class="main hidden" id="chat">
   <section class="amy-dashboard hidden" id="amy-dashboard">
-    <div class="amy-hero"><h2 id="amy-greeting">היי איימי 🌷</h2><p id="amy-summary">בואי נראה יחד איך הכסף שלנו מתנהל החודש.</p><div class="amy-actions"><button type="button" id="amy-refresh">↻ עדכון נתונים</button><button type="button" id="amy-forecast" aria-controls="amy-forecast-panel">תחזית לסוף החודש</button></div></div>
-    <section class="amy-panel hidden" id="amy-forecast-panel"><h3>מה צפוי עד סוף החודש?</h3><div id="amy-forecast-content" class="empty">טוען תחזית…</div></section>
+    <div class="amy-hero"><h2 id="amy-greeting">היי איימי 🌷</h2><p id="amy-summary">בואי נראה יחד איך הכסף שלנו מתנהל החודש.</p><div class="amy-actions"><button type="button" id="amy-refresh">↻ רענון נתונים</button></div></div>
+    <section class="amy-panel" id="amy-forecast-panel"><h3>מה צפוי עד סוף החודש?</h3><div id="amy-forecast-content" class="empty">טוען תחזית…</div></section>
     <div class="amy-kpis"><div class="amy-kpi"><div class="amy-kpi-label">כמה הוצאנו החודש</div><div class="amy-kpi-value" id="amy-expenses">—</div></div><div class="amy-kpi"><div class="amy-kpi-label">הכנסות החודש</div><div class="amy-kpi-value" id="amy-income">—</div></div><div class="amy-kpi"><div class="amy-kpi-label">המצב החודשי שלנו</div><div class="amy-kpi-value" id="amy-net">—</div></div><div class="amy-kpi"><div class="amy-kpi-label">נשאר בתקציבים שהוגדרו</div><div class="amy-kpi-value" id="amy-remaining">—</div></div></div>
     <div class="amy-goal">
       <div class="amy-goal-top"><h3>🎯 החלום הבא שלנו</h3><span id="amy-goal-percent" class="badge">0%</span></div>
@@ -199,11 +199,8 @@ function renderAmyDashboard(d){
  $("#amy-savings").innerHTML=tips.length?tips.map(x=>'<div class="amy-tip"><strong>'+escapeHtml(x.category||"הוצאה")+'</strong><br>אולי אפשר לחסוך כאן עד כ־'+money(x.potentialMonthlySaving)+' בחודש, אם נבדוק את ההוצאה ונמצא חלופה שמתאימה לנו.<small>זהו פער השוואתי בלבד, לא חיסכון מובטח.</small></div>').join(""):'<div class="amy-tip">הצעד הכי טוב כרגע הוא לבחור הוצאה אחת לא הכרחית לפני הקנייה ולשאול: האם היא באמת חשובה לנו עכשיו?</div>';
 }
 async function loadAmyForecast(){
- const panel=$("#amy-forecast-panel"),content=$("#amy-forecast-content"),button=$("#amy-forecast");
- if(button.disabled)return;
- button.disabled=true;button.textContent="טוענת תחזית…";
- panel.classList.remove("hidden");content.textContent="בודקת את התחזית מול RiseUp…";
- panel.scrollIntoView({behavior:"smooth",block:"start"});
+ const panel=$("#amy-forecast-panel"),content=$("#amy-forecast-content");
+ panel.classList.remove("hidden");content.textContent="מעדכנת תחזית חודשית מול RiseUp…";
  try{
   const r=await fetch("/api/forecast",{headers:{Authorization:"Bearer "+token},cache:"no-store"}),d=await r.json();
   if(!r.ok)throw Error(d.error||"לא הצלחתי לטעון תחזית");
@@ -211,7 +208,7 @@ async function loadAmyForecast(){
   const fixed=(d.fixedExpenseTransactions||[]).filter(x=>!x.isIncome);
   content.innerHTML='<div class="amy-category"><div class="amy-category-head"><span>יתרה צפויה בחשבונות בסוף החודש</span><strong>'+money(d.totalPredictedBalance)+'</strong></div></div><div class="amy-category"><div class="amy-category-head"><span>תקציב קטגוריות שעדיין נשאר</span><strong>'+(d.budgetReserveTotal===null?"לא זמין":money(d.budgetReserveTotal))+'</strong></div></div><div class="amy-category"><div class="amy-category-head"><span>הוצאות קבועות שעדיין צפויות</span><strong>'+money(d.fixedExpenseReserveTotal)+'</strong></div></div><div class="amy-tip">ההוצאות הקבועות כבר נכללות בתחזית היתרה, ולכן לא מפחיתים אותן שוב. התחזית אינה כוללת קניות והוצאות משתנות שעדיין לא בוצעו.</div>'+(fixed.length?'<h4 style="font-size:13px;margin:14px 0 6px">תשלומים קבועים צפויים</h4>'+fixed.map(x=>'<div class="amy-tip">'+escapeHtml(x.businessName)+' · '+money(x.amount)+'<small>'+escapeHtml(x.date||"מועד לא צוין")+'</small></div>').join(""):"");
  }catch(e){content.textContent="לא הצלחתי לטעון את התחזית: "+e.message}
- finally{button.disabled=false;button.textContent="רענון תחזית"}
+ 
 }
 async function loadDashboard(){
  $("#dash-loading").classList.remove("hidden");$("#dash-error").classList.add("hidden");$("#dash-content").classList.add("hidden");
@@ -230,6 +227,7 @@ async function loadDashboard(){
   $("#management-panel").innerHTML=lines.map(x=>'<div class="insight">'+escapeHtml(x)+'</div>').join("");$("#dash-foot").textContent="עודכן: "+new Date(d.generatedAt).toLocaleString("he-IL")+" · הנתונים תלויים בהרשאות RiseUp שלך.";
   renderAmyDashboard(d);
   $("#dash-content").classList.remove("hidden");
+  if(profile==="amy")await loadAmyForecast();
  }catch(e){$("#dash-error").textContent=e.message;$("#dash-error").classList.remove("hidden")}finally{$("#dash-loading").classList.add("hidden")}
 }
 document.addEventListener("click",e=>{const toggle=e.target.closest("#reserve-toggle");if(!toggle)return;const details=$("#reserve-details");const expanded=toggle.getAttribute("aria-expanded")==="true";toggle.setAttribute("aria-expanded",String(!expanded));details.hidden=expanded;});
@@ -239,7 +237,7 @@ async function send(q){q=q.trim();if(!q||!token||busy)return;busy=true;history.p
 $("#amy-goal-save").onclick=saveAmyGoal;
 $("#refresh-dashboard").onclick=loadDashboard;
 $("#amy-refresh").onclick=loadDashboard;
-document.addEventListener("click",e=>{const button=e.target.closest("#amy-forecast");if(!button)return;e.preventDefault();loadAmyForecast();});
+
 $("#show-forecast").onclick=loadForecast;
 $("#hide-forecast").onclick=()=>$("#forecast-panel").classList.add("hidden");
 $("#logout").onclick=()=>{
