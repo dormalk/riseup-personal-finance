@@ -16,6 +16,8 @@ for (const name of ["RISEUP_PAT", "OPENAI_API_KEY", "APP_ACCESS_TOKEN"]) {
 }
 
 const app = express();
+// Railway terminates TLS at its proxy; trust the single proxy hop for client IP detection.
+app.set("trust proxy", 1);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 const port = Number(process.env.PORT || 3000);
