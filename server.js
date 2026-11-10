@@ -200,6 +200,45 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
   }
 });
 
+app.get("/api/forecast", limiter, auth, async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const forecastTool = "get_future_bank_balances_prediction";
+    if (!toolByName(forecastTool)) {
+      return res.status(503).json({ error: "כלי תחזית היתרות אינו זמין בחיבור RiseUp הנוכחי." });
+    }
+    const budget = await callRiseup("get_budget", { date: "current" });
+    const month = String(budget?.budgetDate || monthInIsrael(0));
+    const match = /^(\\d{4})-(\\d{2})$/.exec(month);
+    if (!match) throw new Error("Invalid RiseUp budget month");
+    const year = Number(match[1]), monthNumber = Number(match[2]);
+    const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const futureDateForPrediction = year + "-" + String(monthNumber).padStart(2,"0") + "-" + String(lastDay).padStart(2,"0");
+    const prediction = await callRiseup(forecastTool, { futureDateForPrediction });
+    const accounts = Array.isArray(prediction?.accounts) ? prediction.accounts.map(a => ({
+      bank: a.bankName || "חשבון בנק",
+      account: a.accountNickname || a.bankName || "חשבון",
+      currentBalance: num(a.currentBalance),
+      currentBalanceUpdatedAt: a.currentBalanceUpdatedAt || null,
+      predictedBalance: num(a.futurePredictedBalance),
+      billedUntilDate: num(a.amountToBeBilledUntilFuturePredictionDate),
+      fixedPredictedUntilDate: num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
+      knownTransactions: Array.isArray(a.transactionsBilledUntilFuturePredictionDate) ? a.transactionsBilledUntilFuturePredictionDate : [],
+      fixedTransactions: Array.isArray(a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate) ? a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate : []
+    })) : [];
+    res.json({
+      month, futureDateForPrediction, accounts,
+      totalCurrentBalance: accounts.length ? accounts.reduce((sum,a)=>sum+a.currentBalance,0) : null,
+      totalPredictedBalance: accounts.length ? accounts.reduce((sum,a)=>sum+a.predictedBalance,0) : null,
+      generatedAt: new Date().toISOString(),
+      available: accounts.length > 0
+    });
+  } catch (err) {
+    console.error("Forecast error:", err?.message || err);
+    res.status(502).json({ error: "לא הצלחתי לקבל תחזית יתרות מ־RiseUp. בדוק את הרשאות התקציב והיתרות ונסה שוב." });
+  }
+});
+
 app.post("/api/chat", limiter, auth, async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const raw = req.body?.messages;
