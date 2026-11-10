@@ -78,37 +78,35 @@ function monthInIsrael(offset = 0) {
 }
 const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const abs = value => Math.abs(num(value));
+function normalizeCategoryName(value) {
+  const name = String(value || "אחר").trim() || "אחר";
+  return name === "כלכלה" ? "סופר" : name;
+}
 function summarizeBudget(budget, transactions) {
   const envelopes = Array.isArray(budget?.envelopes) ? budget.envelopes : [];
   const txs = Array.isArray(transactions?.transactions) ? transactions.transactions : null;
   const byCategory = new Map();
   let income = 0, expenses = 0, transactionCount = 0, plannedExpenses = 0;
 
-  // Use the dedicated transactions endpoint for actual cashflow. It exposes
-  // the customer-facing category and exclusion flag, unlike budget envelopes.
   if (txs) {
     for (const tx of txs) {
       if (tx.isExcluded) continue;
       const amount = abs(tx.amount);
       if (!amount) continue;
       transactionCount++;
-      if (tx.isIncome) {
-        income += amount;
-        continue;
-      }
+      if (tx.isIncome) { income += amount; continue; }
       expenses += amount;
-      const name = String(tx.categoryLabel || "אחר").trim() || "אחר";
+      const name = normalizeCategoryName(tx.categoryLabel);
       const item = byCategory.get(name) || { name, type: tx.actualType || "other", actual: 0, transactionCount: 0 };
       item.actual += amount;
       item.transactionCount++;
       byCategory.set(name, item);
     }
   } else {
-    // Fallback only when the transactions endpoint is unavailable.
     for (const env of envelopes) {
       const type = env.type || "other";
       const actuals = Array.isArray(env.actuals) ? env.actuals : [];
-      const name = String(env.details?.trackingCategory?.name || env.name || env.title || "אחר");
+      const name = normalizeCategoryName(env.details?.trackingCategory?.name || env.name || env.title);
       for (const tx of actuals) {
         if (tx.isExcluded) continue;
         transactionCount++;
@@ -116,7 +114,7 @@ function summarizeBudget(budget, transactions) {
         const amount = abs(tx.billingAmount);
         if (!amount) continue;
         expenses += amount;
-        const category = String(tx.expense || name || "אחר");
+        const category = normalizeCategoryName(tx.expense || name);
         const item = byCategory.get(category) || { name: category, type, actual: 0, transactionCount: 0 };
         item.actual += amount;
         item.transactionCount++;
@@ -128,30 +126,35 @@ function summarizeBudget(budget, transactions) {
   const plannedByCategory = new Map();
   for (const env of envelopes) {
     const type = env.type || "other";
-    const planned = abs(env.balancedAmount ?? env.originalAmount);
-    if (["fixed", "variable", "trackingCategory"].includes(type)) plannedExpenses += planned;
-    // Only attach a plan to a category when RiseUp supplies a category-specific
-    // envelope. Never spread the aggregate variable budget across subcategories.
-    if (["fixed", "trackingCategory"].includes(type)) {
-      const name = String(env.details?.trackingCategory?.name || env.name || env.title || "").trim();
+    const isSaving = env.details?.trackingCategory?.trackingCategoryType === "saving";
+    const planned = abs(env.originalAmount ?? (type === "fixed" ? env.balancedAmount : null));
+    if (!isSaving && ["fixed", "trackingCategory"].includes(type)) plannedExpenses += planned;
+    // Tracking-category budgets are the user's category-level spending limits.
+    // Fixed commitments are handled separately by RiseUp's future-balance forecast.
+    if (type === "trackingCategory" && !isSaving) {
+      const name = normalizeCategoryName(env.details?.trackingCategory?.name || env.name || env.title);
       if (name) plannedByCategory.set(name, (plannedByCategory.get(name) || 0) + planned);
     }
   }
 
-  const categories = [...byCategory.values()].map(c => {
-    const planned = plannedByCategory.has(c.name) ? plannedByCategory.get(c.name) : null;
+  const names = new Set([...byCategory.keys(), ...plannedByCategory.keys()]);
+  const categories = [...names].map(name => {
+    const actual = byCategory.get(name) || { name, type: "other", actual: 0, transactionCount: 0 };
+    const planned = plannedByCategory.has(name) ? plannedByCategory.get(name) : null;
+    const remaining = planned === null ? null : Math.max(0, planned - actual.actual);
     return {
-      ...c, planned,
-      remaining: planned === null ? null : planned - c.actual,
-      utilization: planned > 0 ? Math.round(c.actual / planned * 100) : null,
-      share: expenses > 0 ? Math.round(c.actual / expenses * 100) : 0
+      ...actual, planned, remaining,
+      utilization: planned > 0 ? Math.round(actual.actual / planned * 100) : null,
+      share: expenses > 0 ? Math.round(actual.actual / expenses * 100) : 0
     };
   }).sort((x,y)=>y.actual-x.actual);
 
   return {
     month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
     income, expenses, net: income-expenses, plannedExpenses,
-    categories: categories.slice(0,20), transactionCount
+    budgetReserveTotal: categories.reduce((sum,c)=>sum+(c.remaining||0),0),
+    categories: categories.slice(0,30), transactionCount,
+    transactionsAvailable: Boolean(txs)
   };
 }
 
@@ -209,12 +212,16 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
     }
     const budget = await callRiseup("get_budget", { date: "current" });
     const month = String(budget?.budgetDate || monthInIsrael(0));
-    const match = /^(\d{4})-(\d{2})$/.exec(month);
+    const match = /^(\\d{4})-(\\d{2})$/.exec(month);
     if (!match) throw new Error("Invalid RiseUp budget month");
     const year = Number(match[1]), monthNumber = Number(match[2]);
     const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
     const futureDateForPrediction = year + "-" + String(monthNumber).padStart(2,"0") + "-" + String(lastDay).padStart(2,"0");
-    const prediction = await callRiseup(forecastTool, { futureDateForPrediction });
+    const [prediction, transactions] = await Promise.all([
+      callRiseup(forecastTool, { futureDateForPrediction }),
+      callRiseup("get_transactions", { cashflowMonth: month, maxTransactions: 5000 }).catch(() => null)
+    ]);
+    const budgetSummary = summarizeBudget(budget, transactions);
     const accounts = Array.isArray(prediction?.accounts) ? prediction.accounts.map(a => ({
       bank: a.bankName || "חשבון בנק",
       account: a.accountNickname || a.bankName || "חשבון",
@@ -226,10 +233,29 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
       knownTransactions: Array.isArray(a.transactionsBilledUntilFuturePredictionDate) ? a.transactionsBilledUntilFuturePredictionDate : [],
       fixedTransactions: Array.isArray(a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate) ? a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate : []
     })) : [];
+    const totalCurrentBalance = accounts.length ? accounts.reduce((sum,a)=>sum+a.currentBalance,0) : null;
+    const totalPredictedBalance = accounts.length ? accounts.reduce((sum,a)=>sum+a.predictedBalance,0) : null;
+    const knownTransactions = accounts.flatMap(a => a.knownTransactions.map(t => ({
+      account: a.account, businessName: t.businessName || "עסקה ידועה",
+      amount: num(t.amount), isIncome: Boolean(t.isIncome), date: t.billingDate || null
+    })));
+    const fixedTransactions = accounts.flatMap(a => a.fixedTransactions.map(t => ({
+      account: a.account, businessName: t.businessName || "תנועה קבועה",
+      amount: num(t.amount), isIncome: Boolean(t.isIncome), date: t.predictedBillingDate || null
+    })));
+    const reserveCategories = budgetSummary.categories
+      .filter(c => c.planned !== null && c.planned > 0 && c.remaining > 0)
+      .map(c => ({ name: c.name, planned: c.planned, actual: c.actual, remaining: c.remaining }));
+    const budgetReserveTotal = budgetSummary.budgetReserveTotal;
     res.json({
       month, futureDateForPrediction, accounts,
-      totalCurrentBalance: accounts.length ? accounts.reduce((sum,a)=>sum+a.currentBalance,0) : null,
-      totalPredictedBalance: accounts.length ? accounts.reduce((sum,a)=>sum+a.predictedBalance,0) : null,
+      totalCurrentBalance, totalPredictedBalance,
+      knownTransactions, fixedTransactions,
+      budgetReserveAvailable: budgetSummary.transactionsAvailable,
+      budgetReserveTotal: budgetSummary.transactionsAvailable ? budgetReserveTotal : null,
+      availableAfterBudgetReserve: budgetSummary.transactionsAvailable && totalPredictedBalance !== null
+        ? totalPredictedBalance - budgetReserveTotal : null,
+      reserveCategories,
       generatedAt: new Date().toISOString(),
       available: accounts.length > 0
     });
