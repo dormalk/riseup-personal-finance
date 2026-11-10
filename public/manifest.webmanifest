@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "קופת האוצר — הכסף שלך, המטרות שלך",
-  "short_name": "קופת האוצר",
-  "description": "מגלים איך לחסוך, מציבים מטרות ומרוויחים יותר",
+  "name": "Growise — Grow your money wisely",
+  "short_name": "Growise",
+  "description": "לומדים לנהל כסף, חוסכים ומצמיחים את העתיד",
   "lang": "he",
   "dir": "rtl",
   "start_url": "/",
@@ -13,13 +13,13 @@
   "theme_color": "#102d24",
   "icons": [
     {
-      "src": "/icon-192.svg",
+      "src": "/icon-192.svg?v=3",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/icon-512.svg?v=3",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
