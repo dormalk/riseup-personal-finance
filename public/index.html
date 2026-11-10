@@ -16,7 +16,7 @@ button,textarea,input{font:inherit}button{cursor:pointer}
 .shell{max-width:980px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;background:#fff;box-shadow:var(--shadow)}
 .topbar{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:3}
 .brand{display:flex;align-items:center;gap:12px}.brand img{width:42px;height:42px}.brand-name{font-size:19px;font-weight:800;letter-spacing:-.5px}.brand-sub{font-size:12px;color:var(--muted);margin-top:2px}
-.top-actions{display:flex;gap:8px;align-items:center}.icon-btn,.soft-btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:10px 13px;font-size:13px}.icon-btn:hover,.soft-btn:hover{background:var(--paper)}
+.top-actions{display:flex;gap:8px;align-items:center}.clear-chat{border-color:#d7e6df;color:#176b4b;background:#f3faf6;font-weight:700;white-space:nowrap}.clear-chat:hover{background:#e7f4ec}.icon-btn,.soft-btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:10px 13px;font-size:13px}.icon-btn:hover,.soft-btn:hover{background:var(--paper)}
 .main{width:100%;max-width:790px;margin:0 auto;padding:34px 24px 20px;display:flex;flex:1;flex-direction:column}
 .welcome{padding:28px 0 20px}.eyebrow{display:inline-flex;align-items:center;gap:7px;background:var(--mint);color:var(--green);font-size:12px;font-weight:700;border-radius:30px;padding:7px 11px}.dot{width:7px;height:7px;border-radius:50%;background:#319b65}.welcome h1{font-size:clamp(27px,5vw,38px);letter-spacing:-1.1px;margin:18px 0 9px;line-height:1.18}.welcome p{color:var(--muted);font-size:15px;line-height:1.75;margin:0;max-width:580px}
 .prompts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 24px}.prompt{border:1px solid var(--line);background:#fff;text-align:right;padding:14px 15px;border-radius:15px;color:var(--ink);font-size:13px;line-height:1.55;transition:.15s}.prompt:hover{border-color:#9bbba7;background:#fbfefb}.prompt strong{display:block;font-size:14px;margin-bottom:3px}.prompt span{color:var(--muted)}
@@ -144,7 +144,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 <div class="shell">
 <header class="topbar">
   <div class="brand"><img src="/icon.svg" alt=""><div><div class="brand-name">Growise</div><div class="brand-sub">Grow your money wisely</div></div></div>
-  <div class="top-actions"><span class="status" id="connection-status">לא מחובר</span><button class="soft-btn hidden" id="install">התקנה</button><button class="icon-btn hidden" id="logout">יציאה</button><button class="icon-btn hidden" id="new-chat" title="ניקוי השיחה">ניקוי שיחה</button></div>
+  <div class="top-actions"><span class="status" id="connection-status">לא מחובר</span><button class="soft-btn hidden" id="install">התקנה</button><button class="icon-btn hidden" id="logout">יציאה</button><button type="button" class="soft-btn clear-chat hidden" id="new-chat" title="ניקוי השיחה והתחלה מחדש" aria-label="ניקוי שיחה">🧹 ניקוי שיחה</button></div>
 </header>
 <section class="login-screen" id="login">
   <img src="/icon.svg" alt="">
