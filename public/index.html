@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f3f6f3"><title>העוזר הפיננסי שלי</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color:#17251d;background:#f3f6f3}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px}
+main{width:min(760px,100%);background:#fff;border:1px solid #dfe7e0;border-radius:18px;overflow:hidden}
+header{padding:22px;background:#edf5ee;border-bottom:1px solid #dfe7e0}h1{font-size:1.4rem;margin:0 0 7px}p{line-height:1.6;color:#536258;margin:0}
+section{padding:20px}label{display:block;font-weight:650;margin-bottom:8px}
+input,textarea,button{font:inherit}input,textarea{width:100%;padding:12px;border:1px solid #cbd7ce;border-radius:10px;margin-bottom:10px}
+button{border:0;border-radius:10px;padding:12px 18px;background:#176b43;color:#fff;font-weight:650;cursor:pointer}
+button:disabled{opacity:.6}#chat{display:none}#messages{display:grid;gap:10px;max-height:55vh;overflow:auto;margin-bottom:14px}
+.msg{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;padding:12px;border-radius:12px}.user{background:#eaf3ed;justify-self:start;max-width:92%}.assistant{background:#f2f5f2}
+textarea{min-height:80px;resize:vertical}.note{padding:0 20px 20px;font-size:.83rem}.secondary{background:#e9efea;color:#263b2e}.actions{display:flex;gap:8px;flex-wrap:wrap}
+</style></head>
+<body><main>
+<header><h1>העוזר הפיננסי שלי</h1><p>שאל שאלות בעברית על התקציב והעסקאות שלך ב-RiseUp.</p></header>
+<section id="login"><label for="key">מפתח הגישה לאפליקציה</label><input id="key" type="password" autocomplete="current-password" placeholder="APP_ACCESS_TOKEN"><button id="connect">התחברות</button><p id="status" role="status"></p></section>
+<section id="chat"><div id="messages" aria-live="polite"></div><form id="ask"><textarea id="question" maxlength="4000" required placeholder="לדוגמה: מה היו קטגוריות ההוצאה הגדולות שלי החודש?"></textarea><div class="actions"><button id="send">שלח שאלה</button><button type="button" class="secondary" id="logout">התנתקות</button></div></form></section>
+<p class="note">הנתונים נשלפים מ-RiseUp לפי דרישה ונשלחים ל-OpenAI API כדי לנסח תשובות. השיחות אינן נשמרות באפליקציה. מפתח הגישה נשמר בזיכרון הדף בלבד. אל תשתף את כתובת האפליקציה או את מפתח הגישה.</p>
+</main>
+<script>
+const $=s=>document.querySelector(s);let token="",history=[];
+function add(role,text){const e=document.createElement("div");e.className="msg "+role;e.textContent=text;$("#messages").append(e);$("#messages").scrollTop=$("#messages").scrollHeight}
+$("#connect").onclick=async()=>{token=$("#key").value.trim();if(!token)return;$("#status").textContent="בודק חיבור...";try{const r=await fetch("/api/status",{headers:{Authorization:"Bearer "+token}});if(!r.ok)throw Error();const d=await r.json();$("#login").style.display="none";$("#chat").style.display="block";add("assistant","החיבור פעיל. כלים זמינים: "+d.tools.map(t=>t.name).join(", "));}catch{token="";$("#status").textContent="החיבור נכשל. בדוק את המפתח והגדרות השירות."}};
+$("#ask").onsubmit=async e=>{e.preventDefault();const q=$("#question").value.trim();if(!q||!token)return;history.push({role:"user",content:q});add("user",q);$("#question").value="";$("#send").disabled=true;try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({messages:history})});const d=await r.json();if(!r.ok)throw Error(d.error||"שגיאה");history.push({role:"assistant",content:d.reply});add("assistant",d.reply)}catch(err){add("assistant",err.message)}finally{$("#send").disabled=false}};
+$("#logout").onclick=()=>{token="";history=[];$("#messages").replaceChildren();$("#key").value="";$("#chat").style.display="none";$("#login").style.display="block";$("#status").textContent="התנתקת."};
+</script></body></html>
