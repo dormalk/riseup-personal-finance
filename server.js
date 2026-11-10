@@ -244,7 +244,7 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
       amount: num(t.amount), isIncome: Boolean(t.isIncome), date: t.predictedBillingDate || null
     })));
     const reserveCategories = budgetSummary.categories
-      .filter(c => c.planned !== null && c.planned > 0 && c.remaining > 0)
+      .filter(c => c.planned !== null && c.planned > 0)
       .map(c => ({ name: c.name, planned: c.planned, actual: c.actual, remaining: c.remaining }));
     const budgetReserveTotal = budgetSummary.budgetReserveTotal;
     res.json({
