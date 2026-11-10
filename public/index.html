@@ -78,6 +78,41 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 
 /* Dor: calmer, more personal and focused dashboard */
 .welcome{padding:20px 0 12px}.welcome h1{font-size:clamp(26px,4.5vw,34px);margin:13px 0 7px}.welcome p{font-size:14px;max-width:520px}.dash-head h2{font-size:20px}.dor-extra{display:none!important}.dashboard .kpi{border-radius:18px;padding:16px}.dashboard .kpi-label{font-size:12px}.dashboard .panel{border-radius:18px}.dashboard .dash-grid{margin-top:14px}.dashboard .panel h3{font-size:15px}.prompts{gap:9px;margin:14px 0 20px}.prompt{border-radius:17px;padding:14px 16px}.prompt strong{font-size:14px}.composer{border-radius:18px}.composer textarea::placeholder{color:#78877e}@media(max-width:620px){.welcome{padding-top:14px}.dash-head{align-items:flex-start}.dash-head h2{font-size:18px}.dashboard .kpi{padding:13px}.dashboard .dash-grid{gap:10px}.prompts{grid-template-columns:1fr 1fr}.prompt{padding:12px}.prompt span{font-size:11px}}
+
+/* Dor dashboard layout refinement */
+#dashboard{margin-top:4px}
+#dashboard>.dash-head{padding:15px 17px;margin:0 0 13px;background:#f5f8f5;border:1px solid #e5ece6;border-radius:17px}
+#dashboard>.dash-head .muted{margin-top:4px}
+#dashboard .refresh{background:#fff;border-color:#dce6de;min-height:38px;font-weight:700}
+#dash-loading{padding:18px;border:1px solid var(--line);border-radius:15px;background:#fff}
+#dash-error:not(.hidden){padding:13px 15px;margin:10px 0;background:#fff7f4;border:1px solid #f0ddd6;border-radius:13px}
+#dashboard .kpis{gap:11px;margin-bottom:14px}
+#dashboard .kpi{position:relative;overflow:hidden;box-shadow:0 3px 12px rgba(30,60,40,.035);background:linear-gradient(155deg,#fff 65%,#f8fbf8)}
+#dashboard .kpi:before{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:#8bb49a}
+#dashboard .kpi:nth-child(2):before{background:#9aafc4}
+#dashboard .kpi:nth-child(3):before{background:#c4a477}
+#dashboard .kpi-value{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#forecast-panel{padding:17px 18px;border-color:#cddfd1;background:linear-gradient(145deg,#f7fbf7,#fff 75%);box-shadow:0 3px 14px rgba(30,60,40,.04)}
+#forecast-panel>.dash-head{align-items:center}
+#forecast-panel .dash-head h3{font-size:16px}
+#forecast-content .insight{padding:12px 0;line-height:1.65}
+#forecast-content .insight strong{font-size:14px;color:#315f43}
+#forecast-content .insight span{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+#forecast-content .empty{padding:5px 0}
+#dashboard .dash-grid{align-items:start}
+#dashboard .dash-grid>.panel{box-shadow:0 2px 10px rgba(30,60,40,.025)}
+#dashboard .dash-grid>.panel h3{display:flex;align-items:center;gap:7px;padding-bottom:10px;border-bottom:1px solid #edf1ed}
+#dashboard .category{padding:2px 0 5px}
+#dashboard #dash-foot{padding:9px 2px 0}
+@media(max-width:620px){
+ #dashboard>.dash-head{padding:13px;margin-bottom:10px}
+ #dashboard .kpis{gap:8px}
+ #dashboard .kpi{padding:13px 12px}
+ #dashboard .kpi-value{font-size:clamp(17px,5vw,22px)}
+ #forecast-panel{padding:14px}
+ #forecast-panel .dash-head h3{font-size:15px}
+ #dashboard .dash-grid>.panel{padding:14px}
+}
 </style>
 </head>
 <body>
