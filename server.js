@@ -83,36 +83,42 @@ function summarizeBudget(budget, transactions) {
   const categories = [];
   let income = 0, expenses = 0, transactionCount = 0;
   for (const env of envelopes) {
-    const name = String(env.name || env.title || env.category || env.envelopeName || env.expense || "קטגוריה");
     const type = env.type || "other";
     const actuals = Array.isArray(env.actuals) ? env.actuals : [];
+    const tracking = env.details?.trackingCategory;
+    const name = String(
+      tracking?.name || env.name || env.title || env.category ||
+      actuals.find(tx => tx.expense)?.expense || "קטגוריה"
+    );
+    const isSavingsGoal = tracking?.trackingCategoryType === "saving";
     let actual = 0;
     for (const tx of actuals) {
-      if (tx.isIncome) income += abs(tx.incomeAmount);
-      else {
+      if (tx.isIncome) {
+        income += abs(tx.incomeAmount);
+      } else {
         const amount = abs(tx.billingAmount);
         actual += amount;
-        expenses += amount;
+        if (!isSavingsGoal) expenses += amount;
       }
       transactionCount++;
     }
-    if (["fixed", "variable", "trackingCategory"].includes(type)) {
+    if (["fixed", "variable", "trackingCategory"].includes(type) && !isSavingsGoal) {
+      // originalAmount is the current plan. balancedAmount is deprecated and
+      // can be zero for tracked categories even when a real target exists.
+      const planned = env.originalAmount == null ? null : abs(env.originalAmount);
       categories.push({
-        name, type, planned: abs(env.balancedAmount ?? env.originalAmount),
-        actual, remaining: abs(env.balancedAmount ?? env.originalAmount) - actual,
-        utilization: abs(env.balancedAmount ?? env.originalAmount) > 0
-          ? Math.round(actual / abs(env.balancedAmount ?? env.originalAmount) * 100) : null
+        name, type, planned, actual,
+        remaining: planned == null ? null : planned - actual,
+        utilization: planned > 0 ? Math.round(actual / planned * 100) : null
       });
     }
   }
   categories.sort((a,b)=>b.actual-a.actual);
-  const planExpenses = categories.reduce((sum,c)=>sum+c.planned,0);
-  const planIncome = envelopes.filter(e=>e.type==="variableIncome")
-    .reduce((sum,e)=>sum+abs(e.balancedAmount ?? e.originalAmount),0);
+  const planExpenses = categories.reduce((sum,c)=>sum+(c.planned ?? 0),0);
   return {
     month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
     income, expenses, net: income-expenses, plannedExpenses: planExpenses,
-    plannedIncome: planIncome, categories: categories.slice(0,12),
+    plannedIncome: null, categories: categories.slice(0,12),
     transactionCount: transactionCount || (Array.isArray(transactions?.transactions) ? transactions.transactions.length : 0)
   };
 }
