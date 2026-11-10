@@ -1,30 +1,71 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f3f6f3"><title>העוזר הפיננסי שלי</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102d24">
+<meta name="description" content="העוזר הפיננסי האישי שלך, מחובר לנתוני RiseUp">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>כיס — העוזר הפיננסי שלך</title>
 <style>
-:root{font-family:system-ui,Arial,sans-serif;color:#17251d;background:#f3f6f3}*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px}
-main{width:min(760px,100%);background:#fff;border:1px solid #dfe7e0;border-radius:18px;overflow:hidden}
-header{padding:22px;background:#edf5ee;border-bottom:1px solid #dfe7e0}h1{font-size:1.4rem;margin:0 0 7px}p{line-height:1.6;color:#536258;margin:0}
-section{padding:20px}label{display:block;font-weight:650;margin-bottom:8px}
-input,textarea,button{font:inherit}input,textarea{width:100%;padding:12px;border:1px solid #cbd7ce;border-radius:10px;margin-bottom:10px}
-button{border:0;border-radius:10px;padding:12px 18px;background:#176b43;color:#fff;font-weight:650;cursor:pointer}
-button:disabled{opacity:.6}#chat{display:none}#messages{display:grid;gap:10px;max-height:55vh;overflow:auto;margin-bottom:14px}
-.msg{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;padding:12px;border-radius:12px}.user{background:#eaf3ed;justify-self:start;max-width:92%}.assistant{background:#f2f5f2}
-textarea{min-height:80px;resize:vertical}.note{padding:0 20px 20px;font-size:.83rem}.secondary{background:#e9efea;color:#263b2e}.actions{display:flex;gap:8px;flex-wrap:wrap}
-</style></head>
-<body><main>
-<header><h1>העוזר הפיננסי שלי</h1><p>שאל שאלות בעברית על התקציב והעסקאות שלך ב-RiseUp.</p></header>
-<section id="login"><label for="key">מפתח הגישה לאפליקציה</label><input id="key" type="password" autocomplete="current-password" placeholder="APP_ACCESS_TOKEN"><button id="connect">התחברות</button><p id="status" role="status"></p></section>
-<section id="chat"><div id="messages" aria-live="polite"></div><form id="ask"><textarea id="question" maxlength="4000" required placeholder="לדוגמה: מה היו קטגוריות ההוצאה הגדולות שלי החודש?"></textarea><div class="actions"><button id="send">שלח שאלה</button><button type="button" class="secondary" id="logout">התנתקות</button></div></form></section>
-<p class="note">הנתונים נשלפים מ-RiseUp לפי דרישה ונשלחים ל-OpenAI API כדי לנסח תשובות. השיחות אינן נשמרות באפליקציה. מפתח הגישה נשמר בזיכרון הדף בלבד. אל תשתף את כתובת האפליקציה או את מפתח הגישה.</p>
+:root{color-scheme:light;--ink:#182b24;--muted:#718078;--green:#174c38;--green2:#236b4d;--mint:#eaf4ed;--line:#e4ebe6;--paper:#f5f8f5;--white:#fff;--shadow:0 18px 55px #173c2912;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:var(--paper);color:var(--ink)}
+button,textarea,input{font:inherit}button{cursor:pointer}
+.shell{max-width:980px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;background:#fff;box-shadow:var(--shadow)}
+.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:3}
+.brand{display:flex;align-items:center;gap:12px}.brand img{width:42px;height:42px}.brand-name{font-size:19px;font-weight:800;letter-spacing:-.5px}.brand-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.top-actions{display:flex;gap:8px;align-items:center}.icon-btn,.soft-btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:10px 13px;font-size:13px}.icon-btn:hover,.soft-btn:hover{background:var(--paper)}
+.main{width:100%;max-width:790px;margin:0 auto;padding:34px 24px 20px;display:flex;flex:1;flex-direction:column}
+.welcome{padding:28px 0 20px}.eyebrow{display:inline-flex;align-items:center;gap:7px;background:var(--mint);color:var(--green);font-size:12px;font-weight:700;border-radius:30px;padding:7px 11px}.dot{width:7px;height:7px;border-radius:50%;background:#319b65}.welcome h1{font-size:clamp(27px,5vw,38px);letter-spacing:-1.1px;margin:18px 0 9px;line-height:1.18}.welcome p{color:var(--muted);font-size:15px;line-height:1.75;margin:0;max-width:580px}
+.prompts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 24px}.prompt{border:1px solid var(--line);background:#fff;text-align:right;padding:14px 15px;border-radius:15px;color:var(--ink);font-size:13px;line-height:1.55;transition:.15s}.prompt:hover{border-color:#9bbba7;background:#fbfefb}.prompt strong{display:block;font-size:14px;margin-bottom:3px}.prompt span{color:var(--muted)}
+#messages{display:flex;flex-direction:column;gap:18px;padding:12px 0 22px}.message{display:flex;gap:10px;align-items:flex-start;max-width:90%}.message.user{align-self:flex-start;flex-direction:row-reverse}.message.assistant{align-self:stretch;max-width:100%}.avatar{width:30px;height:30px;flex:0 0 30px;border-radius:10px;background:var(--mint);display:grid;place-items:center;color:var(--green);font-size:12px;font-weight:800}.user .avatar{background:#e8edf8;color:#3c527a}.bubble{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:14px;padding:12px 15px;border-radius:15px;background:#f3f6f3}.user .bubble{background:#eaf2ec;border-top-left-radius:5px}.assistant .bubble{background:#f7f9f7;border-top-right-radius:5px;flex:1}.message-tools{display:flex;gap:8px;margin-top:7px}.tiny{border:0;background:transparent;color:#7c8b82;font-size:11px;padding:3px 0}.typing{color:var(--muted);font-size:13px;padding:6px 0}
+.composer-wrap{position:sticky;bottom:0;background:linear-gradient(#ffffff00,#fff 18%);padding:18px 0 max(12px,env(safe-area-inset-bottom));margin-top:auto}
+.composer{border:1px solid #d9e3dc;border-radius:20px;padding:10px;background:#fff;box-shadow:0 8px 28px #173c2910}.composer:focus-within{border-color:#8eb39a;box-shadow:0 0 0 3px #d9ebdf}
+textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px;max-height:160px;padding:9px 10px;color:var(--ink);font-size:14px;line-height:1.6;background:transparent}textarea::placeholder{color:#9aa79f}.composer-bottom{display:flex;justify-content:space-between;align-items:center;padding:3px 4px 1px}.hint{font-size:11px;color:#99a49d}.send{border:0;background:var(--green);color:#fff;border-radius:12px;padding:10px 17px;font-weight:700;font-size:13px}.send:hover{background:var(--green2)}.send:disabled{opacity:.55;cursor:wait}
+.footer{text-align:center;color:#9aa69e;font-size:11px;padding:0 20px 18px;line-height:1.6}.hidden{display:none!important}
+.login-screen{max-width:420px;margin:auto;padding:42px 24px;text-align:center}.login-screen img{width:64px;height:64px}.login-screen h1{font-size:25px;margin:16px 0 8px}.login-screen p{color:var(--muted);font-size:14px;line-height:1.7}.login-form{margin-top:24px;text-align:right}.login-form label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}.login-form input{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;direction:ltr;text-align:left}.primary{width:100%;border:0;background:var(--green);color:#fff;padding:13px;border-radius:12px;font-weight:700}.error{color:#a13d36;font-size:12px;margin-top:10px;min-height:18px}
+.status{display:inline-flex;align-items:center;gap:6px;color:#698075;font-size:11px}.status:before{content:"";width:6px;height:6px;border-radius:50%;background:#45a36b}
+@media(max-width:620px){.shell{box-shadow:none}.topbar{height:65px;padding:0 15px}.brand img{width:37px;height:37px}.brand-name{font-size:17px}.brand-sub{font-size:10px}.top-actions .soft-btn{padding:9px;font-size:11px}.main{padding:22px 16px 10px}.welcome{padding-top:22px}.prompts{grid-template-columns:1fr}.prompt{padding:12px}.message{max-width:96%}.footer{padding-bottom:14px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="topbar">
+  <div class="brand"><img src="/icon.svg" alt=""><div><div class="brand-name">כיס</div><div class="brand-sub">העוזר הפיננסי האישי שלך</div></div></div>
+  <div class="top-actions"><span class="status" id="connection-status">לא מחובר</span><button class="soft-btn hidden" id="install">התקנה</button><button class="icon-btn hidden" id="new-chat" title="שיחה חדשה">＋ שיחה חדשה</button></div>
+</header>
+<section class="login-screen" id="login">
+  <img src="/icon.svg" alt="">
+  <h1>הכסף שלך, בשיחה אחת.</h1>
+  <p>שאל בעברית על התקציב, ההוצאות והתזרים שלך. כיס ישתמש בנתוני RiseUp כדי לעזור לך להבין את התמונה.</p>
+  <div class="login-form"><label for="key">מפתח הגישה הפרטי שלך</label><input id="key" type="password" autocomplete="current-password" placeholder="APP_ACCESS_TOKEN"><button class="primary" id="connect">התחברות מאובטחת</button><div class="error" id="login-error" role="status"></div></div>
+</section>
+<main class="main hidden" id="chat">
+  <section class="welcome" id="welcome"><span class="eyebrow"><span class="dot"></span> מחובר ל־RiseUp</span><h1>היי, על מה נדבר היום?</h1><p>אפשר לשאול אותי כל דבר על ההתנהלות הפיננסית שלך. אני אבדוק את הנתונים הזמינים ואסביר אותם בפשטות — בלי להמציא מספרים.</p></section>
+  <section class="prompts" id="prompts">
+    <button class="prompt" data-q="תן לי תמונת מצב של התקציב שלי החודש"><strong>📊 תמונת מצב חודשית</strong><span>איך אני עומד בתקציב?</span></button>
+    <button class="prompt" data-q="באילו קטגוריות הוצאתי הכי הרבה החודש?"><strong>🧾 לאן הכסף הולך?</strong><span>הקטגוריות עם ההוצאות הגבוהות</span></button>
+    <button class="prompt" data-q="האם יש חריגות או הוצאות חריגות שכדאי שאכיר?"><strong>🔎 דברים שכדאי לשים לב אליהם</strong><span>חריגות והוצאות לא שגרתיות</span></button>
+    <button class="prompt" data-q="תן לי שלוש הצעות מעשיות לחיסכון על בסיס הנתונים שלי"><strong>🌱 איך אפשר לחסוך?</strong><span>רעיונות שמבוססים על הנתונים שלי</span></button>
+  </section>
+  <section id="messages" aria-live="polite" aria-label="הודעות השיחה"></section>
+  <div class="composer-wrap"><form class="composer" id="ask"><textarea id="question" maxlength="4000" rows="1" required placeholder="כתוב הודעה לכיס..."></textarea><div class="composer-bottom"><span class="hint">Enter לשליחה · Shift+Enter לשורה חדשה</span><button class="send" id="send">שליחה ↑</button></div></form></div>
 </main>
+<footer class="footer" id="privacy">הנתונים מ־RiseUp נשלחים ל־OpenAI API לצורך יצירת התשובה. היסטוריית השיחה נשמרת בזיכרון הדפדפן בלבד, ונמחקת בסגירת הדף או בהתנתקות.</footer>
+</div>
 <script>
-const $=s=>document.querySelector(s);let token="",history=[];
-function add(role,text){const e=document.createElement("div");e.className="msg "+role;e.textContent=text;$("#messages").append(e);$("#messages").scrollTop=$("#messages").scrollHeight}
-$("#connect").onclick=async()=>{token=$("#key").value.trim();if(!token)return;$("#status").textContent="בודק חיבור...";try{const r=await fetch("/api/status",{headers:{Authorization:"Bearer "+token}});if(!r.ok)throw Error();const d=await r.json();$("#login").style.display="none";$("#chat").style.display="block";add("assistant","החיבור פעיל. כלים זמינים: "+d.tools.map(t=>t.name).join(", "));}catch{token="";$("#status").textContent="החיבור נכשל. בדוק את המפתח והגדרות השירות."}};
-$("#ask").onsubmit=async e=>{e.preventDefault();const q=$("#question").value.trim();if(!q||!token)return;history.push({role:"user",content:q});add("user",q);$("#question").value="";$("#send").disabled=true;try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({messages:history})});const d=await r.json();if(!r.ok)throw Error(d.error||"שגיאה");history.push({role:"assistant",content:d.reply});add("assistant",d.reply)}catch(err){add("assistant",err.message)}finally{$("#send").disabled=false}};
-$("#logout").onclick=()=>{token="";history=[];$("#messages").replaceChildren();$("#key").value="";$("#chat").style.display="none";$("#login").style.display="block";$("#status").textContent="התנתקת."};
-</script></body></html>
+const $=s=>document.querySelector(s);let token="",history=[],installPrompt=null,busy=false;
+const setStatus=t=>$("#connection-status").textContent=t;
+function addMessage(role,text){const row=document.createElement("div");row.className="message "+role;const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=role==="user"?"אתה":"כ";const body=document.createElement("div");body.style.flex="1";const bubble=document.createElement("div");bubble.className="bubble";bubble.textContent=text;body.append(bubble);if(role==="assistant"){const tools=document.createElement("div");tools.className="message-tools";const copy=document.createElement("button");copy.className="tiny";copy.textContent="העתקת תשובה";copy.onclick=async()=>{try{await navigator.clipboard.writeText(text);copy.textContent="הועתק ✓";setTimeout(()=>copy.textContent="העתקת תשובה",1500)}catch{copy.textContent="לא ניתן להעתיק"}};tools.append(copy);body.append(tools)}row.append(avatar,body);$("#messages").append(row);row.scrollIntoView({behavior:"smooth",block:"end"})}
+function showChat(){ $("#login").classList.add("hidden");$("#chat").classList.remove("hidden");$("#new-chat").classList.remove("hidden");$("#prompts").classList.remove("hidden");$("#welcome").classList.remove("hidden");$("#question").focus()}
+async function connect(){token=$("#key").value.trim();if(!token)return;$("#connect").disabled=true;$("#login-error").textContent="בודק חיבור...";try{const r=await fetch("/api/status",{headers:{Authorization:"Bearer "+token},cache:"no-store"});if(!r.ok)throw Error("לא הצלחתי להתחבר. בדוק את מפתח הגישה.");const d=await r.json();showChat();setStatus("מחובר");addMessage("assistant","התחברתי ל־RiseUp בהצלחה. אפשר להתחיל לשאול אותי על התקציב וההוצאות שלך. הכלים הזמינים כרגע: "+d.tools.map(t=>t.name).join(", "));}catch(e){token="";$("#login-error").textContent=e.message;setStatus("לא מחובר")}finally{$("#connect").disabled=false}}
+async function send(q){q=q.trim();if(!q||!token||busy)return;busy=true;history.push({role:"user",content:q});addMessage("user",q);$("#welcome").classList.add("hidden");$("#prompts").classList.add("hidden");$("#question").value="";$("#send").disabled=true;const typing=document.createElement("div");typing.className="typing";typing.textContent="כיס בודק את הנתונים ומנסח תשובה…";$("#messages").append(typing);typing.scrollIntoView({behavior:"smooth",block:"end"});try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({messages:history.slice(-12)}),cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d.error||"הבקשה נכשלה");history.push({role:"assistant",content:d.reply});addMessage("assistant",d.reply)}catch(e){addMessage("assistant","לא הצלחתי להשלים את הבקשה: "+e.message+"\nאפשר לנסות שוב או להתחיל שיחה חדשה.");history.pop()}finally{typing.remove();busy=false;$("#send").disabled=false;$("#question").focus()}}
+$("#connect").onclick=connect;$("#key").addEventListener("keydown",e=>{if(e.key==="Enter")connect()});$("#ask").onsubmit=e=>{e.preventDefault();send($("#question").value)};$("#question").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#ask").requestSubmit()}});$("#question").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,160)+"px"});document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q));
+$("#new-chat").onclick=()=>{if(busy)return;history=[];$("#messages").replaceChildren();$("#welcome").classList.remove("hidden");$("#prompts").classList.remove("hidden");$("#question").focus()};
+$("#install").onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("#install").classList.add("hidden")}else{alert("להתקנה: פתח את תפריט הדפדפן ובחר 'התקנת אפליקציה' או 'הוספה למסך הבית'.")}};
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#install").classList.remove("hidden")});window.addEventListener("appinstalled",()=>$("#install").classList.add("hidden"));
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+</script>
+</body></html>
