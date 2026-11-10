@@ -48,10 +48,124 @@ const { tools: riseupTools } = await mcp.listTools();
 if (!riseupTools?.length) throw new Error("RiseUp MCP returned no tools.");
 console.log("RiseUp MCP tools:", riseupTools.map(t => t.name).join(", "));
 
+const toolByName = name => riseupTools.find(t => t.name === name);
+function decodeToolResult(result) {
+  if (result?.isError) throw new Error((result.content || []).map(c => c.text || "").join(" ").slice(0, 500));
+  if (result?.structuredContent) return result.structuredContent;
+  const textBlock = (result?.content || []).find(c => c.type === "text")?.text;
+  if (typeof textBlock === "string") {
+    try { return JSON.parse(textBlock); } catch {}
+    const start = textBlock.indexOf("{"), end = textBlock.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try { return JSON.parse(textBlock.slice(start, end + 1)); } catch {}
+    }
+  }
+  return result;
+}
+async function callRiseup(name, args = {}) {
+  if (!toolByName(name)) return null;
+  return decodeToolResult(await mcp.callTool({ name, arguments: args }));
+}
+function monthInIsrael(offset = 0) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit"
+  }).formatToParts(new Date());
+  let year = Number(parts.find(p => p.type === "year").value);
+  let month = Number(parts.find(p => p.type === "month").value) + offset;
+  while (month < 1) { month += 12; year--; }
+  while (month > 12) { month -= 12; year++; }
+  return year + "-" + String(month).padStart(2, "0");
+}
+const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+const abs = value => Math.abs(num(value));
+function summarizeBudget(budget, transactions) {
+  const envelopes = Array.isArray(budget?.envelopes) ? budget.envelopes : [];
+  const txs = Array.isArray(transactions?.transactions) ? transactions.transactions : [];
+  const categoryMap = new Map();
+  let income = 0, expenses = 0;
+  for (const tx of txs) {
+    if (tx.isExcluded || tx.excluded) continue;
+    const amount = abs(tx.amount ?? tx.billingAmount ?? tx.incomeAmount);
+    if (tx.isIncome) { income += amount; continue; }
+    expenses += amount;
+    const category = String(tx.category || tx.expense || tx.categoryName || tx.envelopeName || "ללא קטגוריה");
+    categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
+  }
+  if (!txs.length) {
+    for (const env of envelopes) {
+      for (const tx of (env.actuals || [])) {
+        if (tx.isIncome) income += abs(tx.incomeAmount);
+        else {
+          const amount = abs(tx.billingAmount);
+          expenses += amount;
+          const category = String(env.name || env.title || env.category || env.envelopeName || "קטגוריה");
+          categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
+        }
+      }
+    }
+  }
+  const categories = envelopes
+    .filter(e => ["fixed", "variable"].includes(e.type))
+    .map(e => {
+      const name = String(e.name || e.title || e.category || e.envelopeName || "קטגוריה");
+      const planned = abs(e.balancedAmount ?? e.originalAmount);
+      const actual = categoryMap.get(name) || 0;
+      return { name, type: e.type, planned, actual, remaining: planned - actual,
+        utilization: planned > 0 ? Math.round(actual / planned * 100) : null };
+    });
+  for (const [name, actual] of categoryMap) {
+    if (!categories.some(c => c.name === name)) categories.push({ name, type: "other", planned: 0, actual, remaining: -actual, utilization: null });
+  }
+  categories.sort((a,b) => b.actual-a.actual);
+  const planExpenses = categories.reduce((s,c)=>s+c.planned,0);
+  const planIncome = envelopes.filter(e=>e.type==="variableIncome").reduce((s,e)=>s+abs(e.balancedAmount ?? e.originalAmount),0);
+  return { month: budget?.budgetDate || null, lastUpdatedAt: budget?.lastUpdatedAt || null,
+    income, expenses, net: income-expenses, plannedExpenses: planExpenses, plannedIncome: planIncome,
+    categories: categories.slice(0,12), transactionCount: txs.length };
+}
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.get("/api/status", limiter, auth, (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json({ connected: true, tools: riseupTools.map(t => ({ name: t.name, description: t.description })) });
+});
+
+app.get("/api/dashboard", limiter, auth, async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const currentMonth = monthInIsrael(0);
+    const previousMonth = monthInIsrael(-1);
+    const currentBudget = await callRiseup("get_budget", { date: "current" });
+    if (!currentBudget) return res.status(503).json({ error: "כלי התקציב אינו זמין. ודא שלמפתח RiseUp יש הרשאת budget:read." });
+    const [currentTransactions, previousBudget, balancesResult, benchmarksResult] = await Promise.all([
+      callRiseup("get_transactions", { cashflowMonth: currentMonth, maxTransactions: 5000 }).catch(() => null),
+      callRiseup("get_budget", { date: "previous" }).catch(() => null),
+      callRiseup("get_current_bank_balances_data").catch(() => null),
+      callRiseup("get_benchmarks_data").catch(() => null)
+    ]);
+    const current = summarizeBudget(currentBudget, currentTransactions);
+    const previous = previousBudget ? summarizeBudget(previousBudget, null) : null;
+    const balances = Array.isArray(balancesResult?.balances) ? balancesResult.balances.map(b => ({
+      account: b.accountNickname || b.source || "חשבון", balance: num(b.balance), lastUpdated: b.lastUpdated || null
+    })) : [];
+    const benchmarks = Array.isArray(benchmarksResult?.benchmarks) ? benchmarksResult.benchmarks.map(b => ({
+      category: b.category || b.spendArea, customerSpend: num(b.customerSpend),
+      percentile: num(b.customerSpendPercentile), peerMean: num(b.similarCustomersMean),
+      potentialMonthlySaving: Math.max(0, num(b.customerSpend)-num(b.similarCustomersMean))
+    })).sort((a,b)=>b.potentialMonthlySaving-a.potentialMonthlySaving) : [];
+    res.json({
+      current, previous: previous ? { month: previous.month || previousMonth, income: previous.income, expenses: previous.expenses, net: previous.net } : null,
+      balances, totalBalance: balances.length ? balances.reduce((s,b)=>s+b.balance,0) : null,
+      benchmarks, capabilities: {
+        budget: true, transactions: Boolean(currentTransactions),
+        balances: Boolean(balancesResult), benchmarks: Boolean(benchmarksResult)
+      },
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("Dashboard error:", err?.message || err);
+    res.status(502).json({ error: "לא הצלחתי לטעון את תמונת המצב. בדוק הרשאות RiseUp ונסה שוב." });
+  }
 });
 
 app.post("/api/chat", limiter, auth, async (req, res) => {
@@ -78,7 +192,7 @@ app.post("/api/chat", limiter, auth, async (req, res) => {
   }));
   const system = {
     role: "system",
-    content: "אתה אנליסט פיננסי אישי שעונה בעברית על בסיס נתוני RiseUp. השתמש בכלי RiseUp לנתונים עדכניים. אל תמציא סכומים או עסקאות. הבדל בין נתון שהוחזר לבין חישוב שלך. אם אין גישה לנתון, אמור זאת. כלי RiseUp לקריאה בלבד."
+    content: "אתה סמנכ״ל הכספים האישי של המשתמש ועונה בעברית. נהל את הכסף כמו עסק: הצג הכנסות, הוצאות, תזרים, תקציב מול ביצוע, חריגות והזדמנויות חיסכון. השתמש בכלי RiseUp לנתונים עדכניים. אל תמציא סכומים, קטגוריות או עסקאות; ציין תקופה ומקור נתונים, והבדל בין נתון שנשלף לבין אומדן או חישוב. כשמציעים חיסכון, הצג פעולה מעשית, חיסכון חודשי משוער והנחות. אל תציג חיסכון מובטח. אם אין גישה לנתון, אמור זאת. כלי RiseUp לקריאה בלבד — לעולם אל תטען ששינית תקציב או ביצעת פעולה בחשבון."
   };
 
   try {
@@ -86,19 +200,12 @@ app.post("/api/chat", limiter, auth, async (req, res) => {
     let reply = "";
     for (let round = 0; round < 5; round++) {
       const completion = await openai.chat.completions.create({
-        model,
-        messages: thread,
-        tools,
-        tool_choice: "auto",
-        temperature: 0.2
+        model, messages: thread, tools, tool_choice: "auto", temperature: 0.2
       });
       const assistant = completion.choices?.[0]?.message;
       if (!assistant) throw new Error("Empty model response");
       thread.push(assistant);
-      if (!assistant.tool_calls?.length) {
-        reply = assistant.content || "לא התקבלה תשובה.";
-        break;
-      }
+      if (!assistant.tool_calls?.length) { reply = assistant.content || "לא התקבלה תשובה."; break; }
       for (const call of assistant.tool_calls) {
         const selected = riseupTools.find(t => t.name === call.function.name);
         if (!selected) {
@@ -112,16 +219,8 @@ app.post("/api/chat", limiter, auth, async (req, res) => {
           continue;
         }
         const result = await mcp.callTool({ name: selected.name, arguments: args });
-        const text = (result.content || [])
-          .filter(c => c.type === "text")
-          .map(c => c.text)
-          .join("\n")
-          .slice(0, 20000);
-        thread.push({
-          role: "tool",
-          tool_call_id: call.id,
-          content: result.isError ? JSON.stringify({ error: text }) : (text || JSON.stringify(result))
-        });
+        const text = (result.content || []).filter(c => c.type === "text").map(c => c.text).join("\n").slice(0, 20000);
+        thread.push({ role: "tool", tool_call_id: call.id, content: result.isError ? JSON.stringify({ error: text }) : (text || JSON.stringify(result)) });
       }
     }
     res.json({ reply: reply || "הגעתי למגבלת קריאות הכלים. נסה שאלה ממוקדת יותר." });
