@@ -105,6 +105,35 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 #dashboard .dash-grid>.panel h3{display:flex;align-items:center;gap:7px;padding-bottom:10px;border-bottom:1px solid #edf1ed}
 #dashboard .category{padding:2px 0 5px}
 #dashboard #dash-foot{padding:9px 2px 0}
+/* Dor dashboard: calmer hierarchy and more breathing room */
+#dashboard{max-width:1040px;margin:14px auto 38px}
+#dashboard>.dash-head{padding:19px 22px;margin-bottom:22px;border-radius:20px;background:#f7faf7}
+#dashboard>.dash-head h2{font-size:21px;font-weight:850;letter-spacing:-.35px}
+#dashboard>.dash-head .muted{font-size:12px;margin-top:6px}
+#dashboard .kpis{gap:15px;margin:0 0 20px}
+#dashboard .kpi{padding:19px 18px;border-radius:18px;box-shadow:0 4px 16px rgba(30,60,40,.035)}
+#dashboard .kpi-label{font-size:12px;line-height:1.5}
+#dashboard .kpi-value{font-size:clamp(21px,2.5vw,28px);margin-top:10px}
+#dashboard .kpi-note{font-size:11px;line-height:1.5;margin-top:7px}
+#dor-health-score{margin:0 0 20px!important;padding:17px 20px;border-radius:18px;box-shadow:0 3px 13px rgba(30,60,40,.025)}
+#dor-health-score .health-title{font-size:14px}
+#dor-health-score .health-score{font-size:32px}
+#dor-health-score .health-track{margin:10px 0}
+#dor-health-score .health-components{gap:5px 22px}
+#dor-health-score .health-note{margin-top:7px}
+#forecast-panel{padding:20px 22px;margin-bottom:20px!important;border-radius:20px;box-shadow:0 3px 15px rgba(30,60,40,.035)}
+#forecast-panel .dash-head{margin:0 0 16px!important}
+#forecast-panel .dash-head h3{font-size:17px}
+#forecast-content>.kpis{margin-bottom:15px}
+#forecast-content>.kpis .kpi{padding:17px;border-radius:15px}
+#dashboard .dash-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin-top:0}
+#dashboard .dash-grid>.panel{padding:21px 22px;border-radius:20px;box-shadow:0 3px 15px rgba(30,60,40,.03)}
+#dashboard .dash-grid>.panel h3{font-size:16px;padding-bottom:13px;margin-bottom:17px}
+#dashboard .trends-panel .trend-category-divider{margin:22px 0 17px}
+#dashboard .category{margin:15px 0;padding:3px 0 8px}
+#dashboard .category .track{height:8px;margin-top:8px}
+#dashboard #savings-list .insight{padding:15px 2px;line-height:1.7}
+#dashboard #dash-foot{margin-top:18px!important;padding:12px 2px;border-top:1px solid #edf1ed}
 @media(max-width:620px){
  #dashboard>.dash-head{padding:13px;margin-bottom:10px}
  #dashboard .kpis{gap:8px}
@@ -197,8 +226,8 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
     <div class="dash-head"><div><h2>התמונה שלך החודש</h2><div class="muted" id="dash-date">תמונת מצב עדכנית</div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="refresh" id="refresh-dashboard">↻ רענון נתונים</button></div></div>
     <div id="dash-loading" class="empty">טוען נתונים מ־RiseUp…</div><div id="dash-error" class="dash-error hidden"></div>
     <div id="dash-content" class="hidden">
-      <section class="panel health-panel" id="dor-health-score" style="margin-bottom:12px"><div class="health-loading">מחשב את מדד הבריאות הכלכלית…</div></section>
       <div class="kpis"><div class="kpi"><div class="kpi-label">הוצאות החודש</div><div class="kpi-value" id="kpi-expenses">—</div><div class="kpi-note" id="kpi-expenses-note">ביצוע בפועל</div></div><div class="kpi"><div class="kpi-label">הכנסות החודש</div><div class="kpi-value" id="kpi-income">—</div><div class="kpi-note">לפי נתונים זמינים</div></div><div class="kpi"><div class="kpi-label">עודף / גירעון החודש</div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-note">הכנסות פחות הוצאות בפועל</div></div></div>
+      <section class="panel health-panel" id="dor-health-score" style="margin-bottom:12px"><div class="health-loading">מחשב את מדד הבריאות הכלכלית…</div></section>
       <section class="panel" id="forecast-panel" style="margin-bottom:12px"><div class="dash-head" style="margin:0 0 10px"><h3 style="margin:0">תחזית יתרות לסוף החודש</h3></div><div id="forecast-content" class="empty">טוען תחזית מ־RiseUp…</div></section>
 
       <div class="dash-grid"><div class="panel trends-panel"><h3>הוצאות לפי קטגוריה ומגמות</h3><div id="dor-trends-content" class="empty">מנתח שינויים לעומת החודש הקודם…</div><div class="trend-category-divider"></div><h4 class="trend-subtitle">פירוט הוצאות לפי קטגוריה</h4><div id="category-list" class="empty">אין נתונים להצגה</div></div><div class="panel"><h3>הזדמנויות לחיסכון</h3><div id="savings-list" class="empty">מנתח הזדמנויות…</div></div><div class="panel dor-extra" aria-hidden="true"><h3>יתרות בחשבונות</h3><div id="balances-panel" class="empty">נתוני יתרות אינם זמינים</div></div><div class="panel dor-extra" aria-hidden="true"><h3>בקרה ניהולית</h3><div id="management-panel" class="empty">מכין תמונת מצב…</div></div></div>
