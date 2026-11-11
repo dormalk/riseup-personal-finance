@@ -232,7 +232,7 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
 app.get("/api/subscriptions", limiter, auth, async (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   try {
-    const months = [0, -1, -2].map(offset => monthInIsrael(offset));
+    const months = Array.from({ length: 12 }, (_, index) => monthInIsrael(-index));
     const results = await Promise.all(months.map(month =>
       callRiseup("get_transactions", { cashflowMonth: month, maxTransactions: 5000 }).catch(() => null)
     ));
@@ -287,7 +287,7 @@ app.get("/api/subscriptions", limiter, auth, async (_req, res) => {
         averageMonthly: Math.round(average),
         estimatedAnnual: Math.round(average * 12),
         monthsDetected: monthly.length,
-        confidence: monthly.length === 3 ? "גבוהה" : "בינונית"
+        confidence: monthly.length >= 9 ? "גבוהה" : monthly.length >= 5 ? "בינונית" : "נמוכה"
       });
     }
     recurring.sort((a,b)=>b.averageMonthly-a.averageMonthly);
