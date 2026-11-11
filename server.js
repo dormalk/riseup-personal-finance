@@ -214,7 +214,7 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
       potentialMonthlySaving: Math.max(0, num(b.customerSpend)-num(b.similarCustomersMean))
     })).sort((a,b)=>b.potentialMonthlySaving-a.potentialMonthlySaving) : [];
     res.json({
-      current, previous: previous ? { month: previous.month || previousMonth, income: previous.income, expenses: previous.expenses, net: previous.net } : null,
+      current, previous: previous ? { month: previous.month || previousMonth, income: previous.income, expenses: previous.expenses, net: previous.net, transactionsAvailable: previous.transactionsAvailable, categories: previous.categories.map(c => ({ name: c.name, actual: c.actual, transactionCount: c.transactionCount })) } : null,
       balances, totalBalance: balances.length ? balances.reduce((s,b)=>s+b.balance,0) : null,
       benchmarks, capabilities: {
         budget: true, transactions: Boolean(currentTransactions?.transactions),
