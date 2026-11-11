@@ -306,40 +306,29 @@ async function loadAmyForecast(){
  
 }
 function renderDorTrends(d){
- const target=$("#dor-trends-content");if(!target)return;
+ const target=$("#dor-trends-content");if(!target)return new Map();
  const current=d.current||{},previous=d.previous;
- if(!previous||!current.transactionsAvailable||!previous.transactionsAvailable){
-  target.innerHTML='<div class="empty">אין עדיין מספיק נתוני עסקאות משני החודשים כדי לזהות מגמות אמינות.</div>';return;
- }
+ if(!previous||!current.transactionsAvailable||!previous.transactionsAvailable){target.innerHTML='<div class="empty">אין עדיין מספיק נתוני עסקאות משני החודשים כדי לזהות מגמות אמינות.</div>';return new Map();}
  const monthDays=m=>{const p=String(m||"").match(/^(\\d{4})-(\\d{2})$/);return p?new Date(Number(p[1]),Number(p[2]),0).getDate():30};
- const todayParts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Jerusalem",day:"2-digit"}).formatToParts(new Date());
- const elapsed=Math.max(1,Number(todayParts.find(x=>x.type==="day")?.value)||1);
- const currentDays=Math.max(1,Math.min(monthDays(current.month),elapsed));
- const previousDays=monthDays(previous.month);
- const dailyRate=(amount,days)=>Number(amount||0)/Math.max(1,days);
- const expenseRatio=dailyRate(current.expenses,currentDays)/Math.max(.01,dailyRate(previous.expenses,previousDays));
- const incomeRatio=dailyRate(current.income,currentDays)/Math.max(.01,dailyRate(previous.income,previousDays));
- const pct=x=>Math.round((x-1)*100);
- const chips='<div class="trend-summary"><div class="trend-chip">קצב הוצאות יומי<strong>'+(Number.isFinite(expenseRatio)?(pct(expenseRatio)>0?'↑ ':'↓ ')+Math.abs(pct(expenseRatio))+'%':'לא זמין')+'</strong></div><div class="trend-chip">קצב הכנסות יומי<strong>'+(previous.income>0?(pct(incomeRatio)>0?'↑ ':'↓ ')+Math.abs(pct(incomeRatio))+'%':'אין בסיס להשוואה')+'</strong></div></div>';
- const oldMap=new Map((previous.categories||[]).map(x=>[x.name,Number(x.actual)||0]));
- const newMap=new Map((current.categories||[]).map(x=>[x.name,Number(x.actual)||0]));
+ const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Jerusalem",day:"2-digit"}).formatToParts(new Date());
+ const elapsed=Math.max(1,Number(parts.find(x=>x.type==="day")?.value)||1),currentDays=Math.max(1,Math.min(monthDays(current.month),elapsed)),previousDays=monthDays(previous.month);
+ const daily=(amount,days)=>Number(amount||0)/Math.max(1,days),pct=x=>Math.round((x-1)*100);
+ const er=daily(current.expenses,currentDays)/Math.max(.01,daily(previous.expenses,previousDays)),ir=daily(current.income,currentDays)/Math.max(.01,daily(previous.income,previousDays));
+ target.innerHTML='<div class="trend-summary"><div class="trend-chip">קצב הוצאות יומי<strong>'+(Number.isFinite(er)?(pct(er)>0?"↑ ":"↓ ")+Math.abs(pct(er))+"%":"לא זמין")+'</strong></div><div class="trend-chip">קצב הכנסות יומי<strong>'+(previous.income>0?(pct(ir)>0?"↑ ":"↓ ")+Math.abs(pct(ir))+"%":"אין בסיס להשוואה")+'</strong></div></div><div class="health-note">המגמה של כל קטגוריה מוצגת לצד נתוני ההוצאה שלה, בהשוואת קצב יומי לחודש הקודם.</div>';
+ const oldMap=new Map((previous.categories||[]).map(x=>[x.name,Number(x.actual)||0])),newMap=new Map((current.categories||[]).map(x=>[x.name,Number(x.actual)||0]));
  const names=new Set([...oldMap.keys(),...newMap.keys()]);
- const changes=[...names].map(name=>{const now=newMap.get(name)||0,old=oldMap.get(name)||0;return {name,now,old,change:dailyRate(now,currentDays)-dailyRate(old,previousDays)}}).filter(x=>Math.abs(x.change)>=1).sort((a,b)=>Math.abs(b.change)-Math.abs(a.change));
- const rising=changes.filter(x=>x.change>0).slice(0,3),falling=changes.filter(x=>x.change<0).slice(0,3);
- const row=x=>'<div class="trend-row"><div><strong>'+escapeHtml(x.name)+'</strong><small>קצב יומי קודם: '+money(x.old/previousDays)+' · כעת: '+money(x.now/currentDays)+'</small></div><span class="trend-change '+(x.change>0?'trend-up':'trend-down')+'">'+(x.change>0?'↑ ':'↓ ')+money(Math.abs(x.change))+'/יום</span></div>';
- target.innerHTML=chips+(rising.length?'<div class="muted" style="margin:8px 0 2px">קטגוריות שקצב ההוצאה בהן עלה</div>'+rising.map(row).join(""):'<div class="empty">לא זוהו עליות משמעותיות בקצב ההוצאה לפי הקטגוריות.</div>')+(falling.length?'<div class="muted" style="margin:12px 0 2px">קטגוריות שקצב ההוצאה בהן ירד</div>'+falling.map(row).join(""):'');
- target.innerHTML+='<div class="health-note" style="margin-top:10px">ההשוואה מנרמלת את ההוצאות וההכנסות לפי מספר הימים שעברו בחודש הנוכחי מול החודש הקודם המלא. זו השוואת קצב, לא תחזית לסוף החודש.</div>';
+ return new Map([...names].map(name=>{const oldDaily=daily(oldMap.get(name)||0,previousDays),nowDaily=daily(newMap.get(name)||0,currentDays),change=nowDaily-oldDaily;return [name,{change,percent:oldDaily>0?Math.round(change/oldDaily*100):null}]}));
 }
 async function loadDashboard(){
  $("#dash-loading").classList.remove("hidden");$("#dash-error").classList.add("hidden");$("#dash-content").classList.add("hidden");
  try{
   const r=await fetch("/api/dashboard",{headers:{Authorization:"Bearer "+token},cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d.error||"טעינת הנתונים נכשלה");
-  const c=d.current||{};renderDorTrends(d);$("#dash-date").textContent="תקופת דיווח: "+(c.month||"החודש הנוכחי");
+  const c=d.current||{},trendMap=renderDorTrends(d);$("#dash-date").textContent="תקופת דיווח: "+(c.month||"החודש הנוכחי");
   $("#kpi-expenses").textContent=money(c.expenses);$("#kpi-income").textContent=money(c.income);$("#kpi-net").textContent=money(c.net);$("#kpi-net").style.color=Number(c.net)<0?"#ad5c45":"var(--green)";
   if(d.previous&&d.previous.expenses>0){const diff=((c.expenses-d.previous.expenses)/d.previous.expenses)*100;$("#kpi-expenses-note").textContent=(diff>0?"↑ ":"↓ ")+Math.abs(diff).toFixed(0)+"% לעומת חודש קודם"}else $("#kpi-expenses-note").textContent="ביצוע בפועל";
   const cats=(c.categories||[]).filter(x=>x.actual>0||x.planned>0).slice(0,12);
   const catTotal=cats.reduce((sum,x)=>sum+(Number(x.actual)||0),0);
-  $("#category-list").innerHTML=cats.length?'<div class="muted" style="margin:-4px 0 12px">סכום ההוצאה בפועל ואחוזה מתוך כלל ההוצאות החודשיות</div>'+cats.map(x=>{const share=catTotal>0?Math.round(x.actual/catTotal*100):0;const hasPlan=x.planned!==null&&x.planned!==undefined;const over=hasPlan&&x.actual>x.planned;return '<div class="category"><div class="cat-row"><span>'+escapeHtml(x.name)+(over?' <span class="pill">מעל התקציב</span>':'')+'</span><strong>'+money(x.actual)+'</strong></div><div class="track"><div class="fill '+(over?'over':'')+'" style="width:'+share+'%"></div></div><div class="cat-row" style="color:var(--muted);margin-top:5px"><span>'+share+'% מכלל ההוצאות · '+(x.transactionCount||0)+' עסקאות</span><span>'+(hasPlan?'תקציב: '+money(x.planned):'ללא תקציב נפרד')+'</span></div></div>'}).join(""):'<div class="empty">לא התקבלו עסקאות הוצאה להצגה בתקופה הזו.</div>';
+  $("#category-list").innerHTML=cats.length?'<div class="muted" style="margin:-4px 0 12px">סכום ההוצאה בפועל ואחוזה מתוך כלל ההוצאות החודשיות</div>'+cats.map(x=>{const share=catTotal>0?Math.round(x.actual/catTotal*100):0;const hasPlan=x.planned!==null&&x.planned!==undefined;const over=hasPlan&&x.actual>x.planned,tr=trendMap.get(x.name);return '<div class="category"><div class="cat-row"><span>'+escapeHtml(x.name)+(over?' <span class="pill">מעל התקציב</span>':'')+'</span><strong>'+money(x.actual)+'</strong></div><div class="track"><div class="fill '+(over?'over':'')+'" style="width:'+share+'%"></div></div><div class="cat-row" style="color:var(--muted);margin-top:5px"><span>'+share+'% מכלל ההוצאות · '+(x.transactionCount||0)+' עסקאות '+(tr?(tr.change>0?'↑ ':tr.change<0?'↓ ':'→ ')+(tr.percent===null?'אין בסיס להשוואה':Math.abs(tr.percent)+'% לעומת החודש הקודם'):'מגמה לא זמינה')+'</span><span>'+(hasPlan?'תקציב: '+money(x.planned):'ללא תקציב נפרד')+'</span></div></div>'}).join(""):'<div class="empty">לא התקבלו עסקאות הוצאה להצגה בתקופה הזו.</div>';
   const savings=(d.benchmarks||[]).filter(x=>x.potentialMonthlySaving>0).slice(0,4),overs=(c.categories||[]).filter(x=>x.planned>0&&x.actual>x.planned).sort((a,b)=>(b.actual-b.planned)-(a.actual-a.planned)).slice(0,3),nearBudget=(c.categories||[]).filter(x=>x.planned>0&&x.actual<=x.planned&&x.actual/x.planned>=.8).sort((a,b)=>(b.actual/b.planned)-(a.actual/a.planned)).slice(0,3);
   const overrunCards=overs.map(x=>{const amount=Number(x.actual)-Number(x.planned),pct=Number(x.planned)>0?Math.round(amount/Number(x.planned)*100):null;return '<div class="insight overrun-insight"><div class="overrun-title">🔴 חריגה בתקציב · '+escapeHtml(x.name)+'</div><strong class="overrun-amount">+'+money(amount)+'</strong><div class="overrun-detail">מעל תקציב של '+money(x.planned)+' · הוצאה בפועל: '+money(x.actual)+(pct===null?'':' · חריגה של '+pct+'%')+'</div></div>'}).join("");
   const nearBudgetCards=nearBudget.map(x=>'<div class="insight near-budget-insight"><strong>🟡 מתקרבים לתקרת התקציב · '+escapeHtml(x.name)+'</strong><div>נוצלו '+Math.round(Number(x.actual)/Number(x.planned)*100)+'% מהתקציב · נותרו '+money(Number(x.planned)-Number(x.actual))+'</div></div>').join("");
