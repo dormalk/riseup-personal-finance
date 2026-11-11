@@ -228,6 +228,61 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
   }
 });
 
+
+app.get("/api/subscriptions", limiter, auth, async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const months = [0, -1, -2].map(offset => monthInIsrael(offset));
+    const results = await Promise.all(months.map(month =>
+      callRiseup("get_transactions", { cashflowMonth: month, maxTransactions: 5000 }).catch(() => null)
+    ));
+    if (results.every(result => !Array.isArray(result?.transactions))) {
+      return res.status(503).json({ error: "פירוט העסקאות אינו זמין לזיהוי תשלומים חוזרים." });
+    }
+    const groups = new Map();
+    results.forEach((result, index) => {
+      const month = months[index];
+      for (const tx of Array.isArray(result?.transactions) ? result.transactions : []) {
+        if (tx.isExcluded || tx.isIncome) continue;
+        const amount = abs(tx.amount ?? tx.billingAmount);
+        if (!amount) continue;
+        const merchant = String(tx.businessName || tx.merchantName || tx.description || tx.title || tx.payee || "").trim();
+        if (!merchant) continue;
+        const key = merchant.toLocaleLowerCase("he-IL").replace(/[״"']/g, "").replace(/\s+/g, " ").trim();
+        const list = groups.get(key) || [];
+        list.push({ merchant, amount, month });
+        groups.set(key, list);
+      }
+    });
+    const recurring = [];
+    for (const entries of groups.values()) {
+      const byMonth = new Map();
+      for (const entry of entries) {
+        const current = byMonth.get(entry.month);
+        if (!current || entry.amount > current.amount) byMonth.set(entry.month, entry);
+      }
+      const monthly = [...byMonth.values()];
+      if (monthly.length < 2) continue;
+      const amounts = monthly.map(x => x.amount);
+      const average = amounts.reduce((sum, value) => sum + value, 0) / amounts.length;
+      const spread = (Math.max(...amounts) - Math.min(...amounts)) / Math.max(average, 1);
+      if (spread > 0.25) continue;
+      recurring.push({
+        merchant: monthly[0].merchant,
+        averageMonthly: Math.round(average),
+        estimatedAnnual: Math.round(average * 12),
+        monthsDetected: monthly.length,
+        confidence: monthly.length === 3 ? "גבוהה" : "בינונית"
+      });
+    }
+    recurring.sort((a,b)=>b.averageMonthly-a.averageMonthly);
+    res.json({ monthsChecked: months, recurring: recurring.slice(0, 30), generatedAt: new Date().toISOString() });
+  } catch (err) {
+    console.error("Subscriptions error:", err?.message || err);
+    res.status(502).json({ error: "לא הצלחתי לנתח תשלומים חוזרים מ־RiseUp." });
+  }
+});
+
 app.get("/api/forecast", limiter, auth, async (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   try {
