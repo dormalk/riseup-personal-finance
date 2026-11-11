@@ -241,7 +241,7 @@ app.get("/api/subscriptions", limiter, auth, async (_req, res) => {
     }
     const groups = new Map();
     let excludedNonSubscriptionCount = 0;
-    const nonSubscriptionPattern = /משכנתא|משכנתה|הלוואה|החזר הלוואה|שיק|צ׳ק|צ'ק|המחאה|\d+\s*(?:מתוך|\/)\s*\d+|\binstallments?\b|\bloan\b|\bmortgage\b|\bcheque?\b|\bcheck\b/i;
+    const nonSubscriptionPattern = /משכנתא|משכנתה|הלוואה|החזר הלוואה|שיק|צ׳ק|צ'ק|המחאה|\binstallments?\b|\bloan\b|\bmortgage\b|\bcheque?\b|\bcheck\b/i;
     results.forEach((result, index) => {
       const month = months[index];
       for (const tx of Array.isArray(result?.transactions) ? result.transactions : []) {
