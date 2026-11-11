@@ -240,10 +240,25 @@ app.get("/api/subscriptions", limiter, auth, async (_req, res) => {
       return res.status(503).json({ error: "פירוט העסקאות אינו זמין לזיהוי תשלומים חוזרים." });
     }
     const groups = new Map();
+    let excludedNonSubscriptionCount = 0;
+    const nonSubscriptionPattern = /משכנתא|משכנתה|הלוואה|החזר הלוואה|שיק|צ׳ק|צ'ק|המחאה|תשלומים|תשלום\\s*\\d+\\s*(?:מתוך|מ\/)\\s*\\d+|\\binstallments?\\b|\\bloan\\b|\\bmortgage\\b|\\bcheque?\\b|\\bcheck\\b/i;
     results.forEach((result, index) => {
       const month = months[index];
       for (const tx of Array.isArray(result?.transactions) ? result.transactions : []) {
         if (tx.isExcluded || tx.isIncome) continue;
+        const searchable = [
+          tx.businessName, tx.merchantName, tx.description, tx.title, tx.payee,
+          tx.category, tx.categoryName, tx.subCategory, tx.subCategoryName,
+          tx.transactionType, tx.paymentMethod, tx.notes, tx.comment,
+          tx.installment, tx.installments, tx.installmentNumber, tx.installmentsCount,
+          tx.isInstallment, tx.isLoan, tx.isMortgage, tx.isCheck
+        ].filter(value => value !== null && value !== undefined).map(value =>
+          typeof value === "object" ? JSON.stringify(value) : String(value)
+        ).join(" ");
+        if (tx.isInstallment === true || tx.isLoan === true || tx.isMortgage === true || tx.isCheck === true || nonSubscriptionPattern.test(searchable)) {
+          excludedNonSubscriptionCount++;
+          continue;
+        }
         const amount = abs(tx.amount ?? tx.billingAmount);
         if (!amount) continue;
         const merchant = String(tx.businessName || tx.merchantName || tx.description || tx.title || tx.payee || "").trim();
@@ -276,7 +291,7 @@ app.get("/api/subscriptions", limiter, auth, async (_req, res) => {
       });
     }
     recurring.sort((a,b)=>b.averageMonthly-a.averageMonthly);
-    res.json({ monthsChecked: months, recurring: recurring.slice(0, 30), generatedAt: new Date().toISOString() });
+    res.json({ monthsChecked: months, recurring: recurring.slice(0, 30), excludedNonSubscriptionCount, generatedAt: new Date().toISOString() });
   } catch (err) {
     console.error("Subscriptions error:", err?.message || err);
     res.status(502).json({ error: "לא הצלחתי לנתח תשלומים חוזרים מ־RiseUp." });
