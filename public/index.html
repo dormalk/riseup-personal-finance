@@ -76,6 +76,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 @media(max-width:420px){.amy-goal-stats{font-size:11px}}
 
 
+.trends-panel{border-color:#dce8df;background:linear-gradient(145deg,#fbfefb,#fff)}.trend-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.trend-chip{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:#fff;font-size:12px;flex:1;min-width:130px}.trend-chip strong{display:block;font-size:15px;margin-top:4px}.trend-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:12px}.trend-row small{display:block;color:var(--muted);margin-top:3px}.trend-change{font-weight:800;white-space:nowrap;direction:ltr}.trend-up{color:#b34a42}.trend-down{color:#27834d}
 /* Dor: calmer, more personal and focused dashboard */
 .welcome{padding:20px 0 12px}.welcome h1{font-size:clamp(26px,4.5vw,34px);margin:13px 0 7px}.welcome p{font-size:14px;max-width:520px}.dash-head h2{font-size:20px}.dor-extra{display:none!important}.dashboard .kpi{border-radius:18px;padding:16px}.dashboard .kpi-label{font-size:12px}.dashboard .panel{border-radius:18px}.dashboard .dash-grid{margin-top:14px}.dashboard .panel h3{font-size:15px}.prompts{gap:9px;margin:14px 0 20px}.prompt{border-radius:17px;padding:14px 16px}.prompt strong{font-size:14px}.composer{border-radius:18px}.composer textarea::placeholder{color:#78877e}@media(max-width:620px){.welcome{padding-top:14px}.dash-head{align-items:flex-start}.dash-head h2{font-size:18px}.dashboard .kpi{padding:13px}.dashboard .dash-grid{gap:10px}.prompts{grid-template-columns:1fr 1fr}.prompt{padding:12px}.prompt span{font-size:11px}}
 
@@ -197,6 +198,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
     <div id="dash-content" class="hidden">
       <section class="panel health-panel" id="dor-health-score" style="margin-bottom:12px"><div class="health-loading">מחשב את מדד הבריאות הכלכלית…</div></section>
       <div class="kpis"><div class="kpi"><div class="kpi-label">הוצאות החודש</div><div class="kpi-value" id="kpi-expenses">—</div><div class="kpi-note" id="kpi-expenses-note">ביצוע בפועל</div></div><div class="kpi"><div class="kpi-label">הכנסות החודש</div><div class="kpi-value" id="kpi-income">—</div><div class="kpi-note">לפי נתונים זמינים</div></div><div class="kpi"><div class="kpi-label">עודף / גירעון החודש</div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-note">הכנסות פחות הוצאות בפועל</div></div></div>
+      <section class="panel trends-panel" id="dor-trends" style="margin:12px 0"><h3>📈 מגמות בהוצאות</h3><div id="dor-trends-content" class="empty">מנתח שינויים לעומת החודש הקודם…</div></section>
       <section class="panel" id="forecast-panel" style="margin-bottom:12px"><div class="dash-head" style="margin:0 0 10px"><h3 style="margin:0">תחזית יתרות לסוף החודש</h3></div><div id="forecast-content" class="empty">טוען תחזית מ־RiseUp…</div></section>
 
       <div class="dash-grid"><div class="panel"><h3>הוצאות לפי קטגוריה</h3><div id="category-list" class="empty">אין נתונים להצגה</div></div><div class="panel"><h3>הזדמנויות לחיסכון</h3><div id="savings-list" class="empty">מנתח הזדמנויות…</div></div><div class="panel dor-extra" aria-hidden="true"><h3>יתרות בחשבונות</h3><div id="balances-panel" class="empty">נתוני יתרות אינם זמינים</div></div><div class="panel dor-extra" aria-hidden="true"><h3>בקרה ניהולית</h3><div id="management-panel" class="empty">מכין תמונת מצב…</div></div></div>
@@ -304,11 +306,36 @@ async function loadAmyForecast(){
  }catch(e){content.textContent="לא הצלחתי לטעון את התחזית: "+e.message}
  
 }
+function renderDorTrends(d){
+ const target=$("#dor-trends-content");if(!target)return;
+ const current=d.current||{},previous=d.previous;
+ if(!previous||!current.transactionsAvailable||!previous.transactionsAvailable){
+  target.innerHTML='<div class="empty">אין עדיין מספיק נתוני עסקאות משני החודשים כדי לזהות מגמות אמינות.</div>';return;
+ }
+ const monthDays=m=>{const p=String(m||"").match(/^(\\d{4})-(\\d{2})$/);return p?new Date(Number(p[1]),Number(p[2]),0).getDate():30};
+ const todayParts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Jerusalem",day:"2-digit"}).formatToParts(new Date());
+ const elapsed=Math.max(1,Number(todayParts.find(x=>x.type==="day")?.value)||1);
+ const currentDays=Math.max(1,Math.min(monthDays(current.month),elapsed));
+ const previousDays=monthDays(previous.month);
+ const dailyRate=(amount,days)=>Number(amount||0)/Math.max(1,days);
+ const expenseRatio=dailyRate(current.expenses,currentDays)/Math.max(.01,dailyRate(previous.expenses,previousDays));
+ const incomeRatio=dailyRate(current.income,currentDays)/Math.max(.01,dailyRate(previous.income,previousDays));
+ const pct=x=>Math.round((x-1)*100);
+ const chips='<div class="trend-summary"><div class="trend-chip">קצב הוצאות יומי<strong>'+(Number.isFinite(expenseRatio)?(pct(expenseRatio)>0?'↑ ':'↓ ')+Math.abs(pct(expenseRatio))+'%':'לא זמין')+'</strong></div><div class="trend-chip">קצב הכנסות יומי<strong>'+(previous.income>0?(pct(incomeRatio)>0?'↑ ':'↓ ')+Math.abs(pct(incomeRatio))+'%':'אין בסיס להשוואה')+'</strong></div></div>';
+ const oldMap=new Map((previous.categories||[]).map(x=>[x.name,Number(x.actual)||0]));
+ const newMap=new Map((current.categories||[]).map(x=>[x.name,Number(x.actual)||0]));
+ const names=new Set([...oldMap.keys(),...newMap.keys()]);
+ const changes=[...names].map(name=>{const now=newMap.get(name)||0,old=oldMap.get(name)||0;return {name,now,old,change:dailyRate(now,currentDays)-dailyRate(old,previousDays)}}).filter(x=>Math.abs(x.change)>=1).sort((a,b)=>Math.abs(b.change)-Math.abs(a.change));
+ const rising=changes.filter(x=>x.change>0).slice(0,3),falling=changes.filter(x=>x.change<0).slice(0,3);
+ const row=x=>'<div class="trend-row"><div><strong>'+escapeHtml(x.name)+'</strong><small>קצב יומי קודם: '+money(x.old/previousDays)+' · כעת: '+money(x.now/currentDays)+'</small></div><span class="trend-change '+(x.change>0?'trend-up':'trend-down')+'">'+(x.change>0?'↑ ':'↓ ')+money(Math.abs(x.change))+'/יום</span></div>';
+ target.innerHTML=chips+(rising.length?'<div class="muted" style="margin:8px 0 2px">קטגוריות שקצב ההוצאה בהן עלה</div>'+rising.map(row).join(""):'<div class="empty">לא זוהו עליות משמעותיות בקצב ההוצאה לפי הקטגוריות.</div>')+(falling.length?'<div class="muted" style="margin:12px 0 2px">קטגוריות שקצב ההוצאה בהן ירד</div>'+falling.map(row).join(""):'');
+ target.innerHTML+='<div class="health-note" style="margin-top:10px">ההשוואה מנרמלת את ההוצאות וההכנסות לפי מספר הימים שעברו בחודש הנוכחי מול החודש הקודם המלא. זו השוואת קצב, לא תחזית לסוף החודש.</div>';
+}
 async function loadDashboard(){
  $("#dash-loading").classList.remove("hidden");$("#dash-error").classList.add("hidden");$("#dash-content").classList.add("hidden");
  try{
   const r=await fetch("/api/dashboard",{headers:{Authorization:"Bearer "+token},cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d.error||"טעינת הנתונים נכשלה");
-  const c=d.current||{};$("#dash-date").textContent="תקופת דיווח: "+(c.month||"החודש הנוכחי");
+  const c=d.current||{};renderDorTrends(d);$("#dash-date").textContent="תקופת דיווח: "+(c.month||"החודש הנוכחי");
   $("#kpi-expenses").textContent=money(c.expenses);$("#kpi-income").textContent=money(c.income);$("#kpi-net").textContent=money(c.net);$("#kpi-net").style.color=Number(c.net)<0?"#ad5c45":"var(--green)";
   if(d.previous&&d.previous.expenses>0){const diff=((c.expenses-d.previous.expenses)/d.previous.expenses)*100;$("#kpi-expenses-note").textContent=(diff>0?"↑ ":"↓ ")+Math.abs(diff).toFixed(0)+"% לעומת חודש קודם"}else $("#kpi-expenses-note").textContent="ביצוע בפועל";
   const cats=(c.categories||[]).filter(x=>x.actual>0||x.planned>0).slice(0,12);
