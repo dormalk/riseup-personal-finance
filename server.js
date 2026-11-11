@@ -194,17 +194,24 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
   try {
     const currentMonth = monthInIsrael(0);
     const previousMonth = monthInIsrael(-1);
+    const trendMonths = [-1,-2,-3].map(offset => monthInIsrael(offset));
     const currentBudget = await callRiseup("get_budget", { date: "current" });
     if (!currentBudget) return res.status(503).json({ error: "כלי התקציב אינו זמין. ודא שלמפתח RiseUp יש הרשאת budget:read." });
-    const [currentTransactions, previousBudget, previousTransactions, balancesResult, benchmarksResult] = await Promise.all([
+    const [currentTransactions, previousBudget, ...rest] = await Promise.all([
       callRiseup("get_transactions", { cashflowMonth: currentMonth, maxTransactions: 5000 }).catch(() => null),
       callRiseup("get_budget", { date: "previous" }).catch(() => null),
-      callRiseup("get_transactions", { cashflowMonth: previousMonth, maxTransactions: 5000 }).catch(() => null),
+      ...trendMonths.map(month => callRiseup("get_transactions", { cashflowMonth: month, maxTransactions: 5000 }).catch(() => null)),
       callRiseup("get_current_bank_balances_data").catch(() => null),
       callRiseup("get_benchmarks_data").catch(() => null)
     ]);
+    const trendTransactions = rest.slice(0,3);
+    const balancesResult = rest[3], benchmarksResult = rest[4];
     const current = summarizeBudget(currentBudget, currentTransactions);
-    const previous = previousBudget ? summarizeBudget(previousBudget, previousTransactions) : null;
+    const previous = previousBudget ? summarizeBudget(previousBudget, trendTransactions[0]) : null;
+    const previousMonths = trendMonths.map((month,index) => {
+      const summary = summarizeBudget(index===0?(previousBudget||{budgetDate:month}):{budgetDate:month}, trendTransactions[index]);
+      return { month, expenses: summary.expenses, income: summary.income, transactionsAvailable: summary.transactionsAvailable, categories: summary.categories.map(c => ({ name:c.name, actual:c.actual })) };
+    });
     const balances = Array.isArray(balancesResult?.balances) ? balancesResult.balances.map(b => ({
       account: b.accountNickname || b.source || "חשבון", balance: num(b.balance), lastUpdated: b.lastUpdated || null
     })) : [];
@@ -215,6 +222,7 @@ app.get("/api/dashboard", limiter, auth, async (_req, res) => {
     })).sort((a,b)=>b.potentialMonthlySaving-a.potentialMonthlySaving) : [];
     res.json({
       current, previous: previous ? { month: previous.month || previousMonth, income: previous.income, expenses: previous.expenses, net: previous.net, transactionsAvailable: previous.transactionsAvailable, categories: previous.categories.map(c => ({ name: c.name, actual: c.actual, transactionCount: c.transactionCount })) } : null,
+      previousMonths,
       balances, totalBalance: balances.length ? balances.reduce((s,b)=>s+b.balance,0) : null,
       benchmarks, capabilities: {
         budget: true, transactions: Boolean(currentTransactions?.transactions),
