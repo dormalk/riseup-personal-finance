@@ -249,8 +249,12 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
     const match = /^(\d{4})-(\d{2})$/.exec(month);
     if (!match) throw new Error("Invalid RiseUp budget month");
     const year = Number(match[1]), monthNumber = Number(match[2]);
-    const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
-    const futureDateForPrediction = year + "-" + String(monthNumber).padStart(2,"0") + "-" + String(lastDay).padStart(2,"0");
+    // Predict the actual bank balance on the first day of the following month,
+    // including known card billings and fixed transactions up to and including that date.
+    const nextMonthDate = new Date(Date.UTC(year, monthNumber, 1));
+    const futureDateForPrediction = nextMonthDate.getUTCFullYear() + "-" +
+      String(nextMonthDate.getUTCMonth()+1).padStart(2,"0") + "-" +
+      String(nextMonthDate.getUTCDate()).padStart(2,"0");
     const [prediction, transactions] = await Promise.all([
       callRiseup(forecastTool, { futureDateForPrediction }),
       callRiseup("get_transactions", { cashflowMonth: month, maxTransactions: 5000 }).catch(() => null)
