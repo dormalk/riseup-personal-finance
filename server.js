@@ -181,6 +181,61 @@ app.post("/api/login", limiter, (req, res) => {
   res.setHeader("Set-Cookie", "kis_session=" + encodeURIComponent(process.env.APP_ACCESS_TOKEN) + "; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000");
   res.json({ connected: true });
 });
+
+const DREAMS_REPO = "dormalk/riseup-personal-finance";
+const DREAMS_BRANCH = "growise-dreams-data";
+const DREAMS_PATH = "data/dreams.json";
+async function readSharedDreams() {
+  if (!process.env.DREAMS_GITHUB_TOKEN) throw new Error("חיבור החלומות ל-GitHub עדיין לא הוגדר בשרת.");
+  const url = `https://api.github.com/repos/${DREAMS_REPO}/contents/${DREAMS_PATH}?ref=${encodeURIComponent(DREAMS_BRANCH)}`;
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${process.env.DREAMS_GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } });
+  if (response.status === 404) return { dreams: [], sha: null };
+  if (!response.ok) throw new Error(`GitHub read failed (${response.status}).`);
+  const file = await response.json();
+  const parsed = JSON.parse(Buffer.from(file.content.replace(/\\n/g, ""), "base64").toString("utf8"));
+  return { dreams: Array.isArray(parsed.dreams) ? parsed.dreams : [], sha: file.sha };
+}
+async function writeSharedDreams(dreams) {
+  if (!process.env.DREAMS_GITHUB_TOKEN) throw new Error("חיבור החלומות ל-GitHub עדיין לא הוגדר בשרת.");
+  const url = `https://api.github.com/repos/${DREAMS_REPO}/contents/${DREAMS_PATH}`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const current = await readSharedDreams();
+    const body = { message: "Update shared Growise dreams", content: Buffer.from(JSON.stringify({ dreams }, null, 2) + "\\n").toString("base64"), branch: DREAMS_BRANCH };
+    if (current.sha) body.sha = current.sha;
+    const response = await fetch(url, { method: "PUT", headers: { Authorization: `Bearer ${process.env.DREAMS_GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (response.ok) return dreams;
+    if ((response.status === 409 || response.status === 422) && attempt === 0) continue;
+    const detail = await response.text();
+    throw new Error(`GitHub write failed (${response.status}): ${detail.slice(0, 240)}`);
+  }
+  throw new Error("לא ניתן היה לשמור עקב עדכון מקביל. נסו שוב.");
+}
+function normalizeDreams(input) {
+  if (!Array.isArray(input) || input.length > 50) throw new Error("רשימת החלומות אינה תקינה.");
+  return input.map((d, i) => {
+    const name = String(d?.name || "").trim().slice(0, 60);
+    const target = Number(d?.target), saved = Number(d?.saved);
+    if (!name || !Number.isFinite(target) || target <= 0 || target > 100000000 || !Number.isFinite(saved) || saved < 0 || saved > 100000000) throw new Error("פרטי אחד החלומות אינם תקינים.");
+    return { id: String(d.id || `dream-${i+1}`).slice(0, 80), name, target, saved, updatedAt: new Date().toISOString() };
+  });
+}
+app.get("/api/dreams", limiter, auth, async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try { const data = await readSharedDreams(); res.json({ dreams: data.dreams }); }
+  catch (error) { console.error("Dreams read error:", error.message); res.status(503).json({ error: error.message.includes("לא הוגדר") ? error.message : "לא הצלחתי לטעון את החלומות המשותפים." }); }
+});
+app.put("/api/dreams", limiter, auth, async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const dreams = normalizeDreams(req.body?.dreams);
+    await writeSharedDreams(dreams);
+    res.json({ saved: true, dreams });
+  } catch (error) {
+    console.error("Dreams write error:", error.message);
+    res.status(400).json({ error: error.message.includes("לא הוגדר") ? error.message : error.message.includes("אינם תקינים") || error.message.includes("אינה תקינה") ? error.message : "לא הצלחתי לשמור את החלומות המשותפים." });
+  }
+});
+
 app.post("/api/logout", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Set-Cookie", "kis_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
