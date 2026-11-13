@@ -192,7 +192,7 @@ async function readSharedDreams() {
   if (response.status === 404) return { dreams: [], sha: null };
   if (!response.ok) throw new Error(`GitHub read failed (${response.status}).`);
   const file = await response.json();
-  const parsed = JSON.parse(Buffer.from(file.content.replace(/\\n/g, ""), "base64").toString("utf8"));
+  const parsed = JSON.parse(Buffer.from(file.content, "base64").toString("utf8"));
   return { dreams: Array.isArray(parsed.dreams) ? parsed.dreams : [], sha: file.sha };
 }
 async function writeSharedDreams(dreams) {
@@ -200,7 +200,7 @@ async function writeSharedDreams(dreams) {
   const url = `https://api.github.com/repos/${DREAMS_REPO}/contents/${DREAMS_PATH}`;
   for (let attempt = 0; attempt < 2; attempt++) {
     const current = await readSharedDreams();
-    const body = { message: "Update shared Growise dreams", content: Buffer.from(JSON.stringify({ dreams }, null, 2) + "\\n").toString("base64"), branch: DREAMS_BRANCH };
+    const body = { message: "Update shared Growise dreams", content: Buffer.from(JSON.stringify({ dreams }, null, 2) + "\n").toString("base64"), branch: DREAMS_BRANCH };
     if (current.sha) body.sha = current.sha;
     const response = await fetch(url, { method: "PUT", headers: { Authorization: `Bearer ${process.env.DREAMS_GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (response.ok) return dreams;
