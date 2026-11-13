@@ -12,6 +12,8 @@
 <style>
 :root{color-scheme:light;--ink:#182b24;--muted:#718078;--green:#174c38;--green2:#236b4d;--mint:#eaf4ed;--line:#e4ebe6;--paper:#f5f8f5;--white:#fff;--shadow:0 18px 55px #173c2912;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
 *{box-sizing:border-box}body{margin:0;min-height:100dvh;background:var(--paper);color:var(--ink)}
+/* Prevent horizontal overflow on narrow screens */
+html,body{width:100%;max-width:100%;overflow-x:hidden}.shell{width:100%;min-width:0}.main,#chat,#dashboard,#dash-content,#forecast-panel,#forecast-content,.panel,.amy-dashboard,.amy-panel{min-width:0;max-width:100%}#dashboard,.dashboard,.panel,#forecast-content{overflow-wrap:anywhere}img,svg,canvas,video{max-width:100%}.forecast-balance-comparison>*{min-width:0}.forecast-balance-item .kpi-value{overflow-wrap:anywhere}
 button,textarea,input{font:inherit}button{cursor:pointer}
 .shell{max-width:980px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;background:#fff;box-shadow:var(--shadow)}
 .topbar{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:3}
