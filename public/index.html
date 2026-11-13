@@ -187,7 +187,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 .chat-menu-wrap{position:relative}.chat-menu-toggle{width:42px;height:42px;padding:0;font-size:25px;line-height:1}.chat-menu{position:absolute;top:calc(100% + 8px);left:0;z-index:20;width:180px;max-width:calc(100vw - 30px);padding:6px;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 12px 30px #173c2920}.chat-menu-item{display:block;width:100%;border:0;background:transparent;text-align:right;padding:11px 12px;border-radius:9px;color:var(--ink);font-size:13px;white-space:nowrap}.chat-menu-item:hover{background:var(--paper)}.chat-menu-item+.chat-menu-item{border-top:1px solid #f0f3f0}
 
 .dream-card{cursor:pointer;transition:border-color .15s,box-shadow .15s}.dream-card:hover,.dream-card:focus{border-color:#9bbda4;box-shadow:0 5px 18px #173c2910;outline:none}.dream-card[aria-pressed="true"]{border-color:var(--green);box-shadow:0 0 0 2px #dcece0}.dream-planner{margin-top:18px;padding:18px;border:1px solid #cddfd1;border-radius:18px;background:linear-gradient(145deg,#f6fbf7,#fff)}.dream-planner h3{margin:0 0 7px;font-size:18px}.dream-planner-intro{color:var(--muted);font-size:13px;line-height:1.65;margin:0 0 15px}.dream-plan-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0 17px}.dream-plan-kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0}.dream-plan-kpi span{display:block;color:var(--muted);font-size:11px}.dream-plan-kpi strong{display:block;margin-top:6px;font-size:clamp(16px,3vw,21px);overflow-wrap:anywhere}.dream-plan-tools{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dream-plan-tool{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}.dream-plan-tool h4{margin:0 0 8px;font-size:14px}.dream-plan-tool p{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 10px}.dream-plan-tool label{display:block;font-size:12px;font-weight:700;margin:10px 0 5px}.dream-plan-tool input{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;font:inherit;font-size:14px}.dream-plan-result{margin-top:10px;padding:10px;border-radius:10px;background:#f1f8f2;color:#245b39;font-size:13px;line-height:1.6;font-weight:700}.dream-plan-scenarios{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.dream-plan-scenarios h4{margin:0 0 8px;font-size:14px}.dream-plan-scenario{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:12px}.dream-plan-note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:12px}.dream-plan-close{margin-top:12px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font:inherit;font-size:12px}@media(max-width:520px){.dream-plan-kpis{grid-template-columns:1fr 1fr}.dream-plan-kpis .dream-plan-kpi:last-child{grid-column:1/-1}.dream-plan-tools{grid-template-columns:1fr}}
-</style>
+\n.amy-goal-list{display:grid;gap:8px;margin-top:14px}.amy-goal-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #e6e9e5;border-radius:12px;background:#fff}.amy-goal-item-info{min-width:0}.amy-goal-item-info strong,.amy-goal-item-info span{display:block;overflow-wrap:anywhere}.amy-goal-item-info strong{font-size:13px}.amy-goal-item-info span{font-size:11px;color:var(--muted);margin-top:3px}.amy-goal-item button,.amy-goal-add{border:1px solid #d8e5db;background:#f7fbf7;color:#28613e;border-radius:10px;padding:8px 11px;font-size:12px;font-weight:700;white-space:nowrap}.amy-goal-add{width:100%;margin-top:10px}\n</style>
 </head>
 <body>
 <div class="shell">
@@ -225,6 +225,8 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
       <p id="amy-goal-message" style="font-size:13px;line-height:1.6;margin:9px 0 0">בוחרים מטרה וחוסכים אליה צעד אחר צעד.</p>
       <div class="amy-goal-progress"><span id="amy-goal-bar"></span></div>
       <div class="amy-goal-stats"><span id="amy-goal-saved">נחסכו ₪0</span><strong id="amy-goal-target">מתוך ₪0</strong></div>
+      <div id="amy-goal-list" class="amy-goal-list"></div>
+      <button type="button" id="amy-goal-add" class="amy-goal-add">＋ הוספת יעד נוסף</button>
       <div class="amy-goal-form">
         <div class="wide"><label for="amy-goal-name">על מה אנחנו חוסכים?</label><input id="amy-goal-name" maxlength="60" placeholder="למשל: חופשה משפחתית"></div>
         <div><label for="amy-goal-target-input">סכום היעד (₪)</label><input id="amy-goal-target-input" type="number" min="1" max="100000000" step="1" placeholder="10000"></div>
@@ -329,13 +331,25 @@ async function loadForecast(){
 
 const AMY_GOAL_KEY="kis-amy-savings-goal-v1";
 let sharedDreams=[];
+let editingDreamId=null;
 function readAmyGoal(){try{return JSON.parse(localStorage.getItem(AMY_GOAL_KEY)||"null")||{name:"",target:0,saved:0}}catch{return{name:"",target:0,saved:0}}}
-function renderAmyGoal(g=sharedDreams[0]||{name:"",target:0,saved:0}){
- const target=Math.max(0,Number(g.target)||0),saved=Math.max(0,Number(g.saved)||0),pct=target?Math.min(100,Math.round(saved/target*100)):0;
- $("#amy-goal-name").value=g.name||"";$("#amy-goal-target-input").value=target||"";$("#amy-goal-saved-input").value=saved||"";
+function renderAmyGoal(g){
+  const selected=g||sharedDreams.find(d=>d.id===editingDreamId)||sharedDreams[0]||{name:"",target:0,saved:0};
+  if(selected.id)editingDreamId=selected.id;
+  const target=Math.max(0,Number(selected.target)||0),saved=Math.max(0,Number(selected.saved)||0),pct=target?Math.min(100,Math.round(saved/target*100)):0;
+ $("#amy-goal-name").value=selected.name||"";$("#amy-goal-target-input").value=target||"";$("#amy-goal-saved-input").value=saved||"";
  $("#amy-goal-percent").textContent=pct+"%";$("#amy-goal-bar").style.width=pct+"%";
  $("#amy-goal-saved").textContent="נחסכו "+money(saved);$("#amy-goal-target").textContent="מתוך "+money(target);
- $("#amy-goal-message").textContent=!target?"בוחרים מטרה שחשובה לנו, ומתחילים להתקדם אליה בקצב שמתאים למשפחה.":pct>=100?"איזה יופי! הגענו ליעד של "+(g.name||"החיסכון שלנו")+" 🎉":"כבר התקדמנו "+pct+"% בדרך ל"+(g.name||"מטרה שלנו")+"! נשארו עוד "+money(Math.max(0,target-saved))+". כל סכום קטן מקרב אותנו.";
+ $("#amy-goal-message").textContent=!target?"בוחרים מטרה שחשובה לנו, ומתחילים להתקדם אליה בקצב שמתאים למשפחה.":pct>=100?"איזה יופי! הגענו ליעד של "+(selected.name||"החיסכון שלנו")+" 🎉":"כבר התקדמנו "+pct+"% בדרך ל"+(selected.name||"מטרה שלנו")+"! נשארו עוד "+money(Math.max(0,target-saved))+". כל סכום קטן מקרב אותנו.";
+ $("#amy-goal-save").textContent=selected.id?"עדכון יעד החיסכון":"הוספת יעד החיסכון";
+ renderAmyGoalList();
+}
+function renderAmyGoalList(){
+ const root=$("#amy-goal-list");if(!root)return;
+ root.innerHTML=sharedDreams.length?sharedDreams.map(d=>{const target=Number(d.target)||0,saved=Number(d.saved)||0,pct=target?Math.min(100,Math.round(saved/target*100)):0;return '<div class="amy-goal-item"><div class="amy-goal-item-info"><strong>'+escapeHtml(d.name)+'</strong><span>'+money(saved)+' מתוך '+money(target)+' · '+pct+'%</span></div><button type="button" data-amy-dream-edit="'+escapeHtml(d.id)+'">'+(d.id===editingDreamId?"בעריכה":"עריכה") +'</button></div>'}).join(""):'<div class="amy-goal-note">עדיין לא הוספנו יעדים. אפשר להתחיל מהחלום הראשון שלנו.</div>';
+}
+function startNewAmyGoal(){
+ editingDreamId=null;$("#amy-goal-name").value="";$("#amy-goal-target-input").value="";$("#amy-goal-saved-input").value="0";$("#amy-goal-percent").textContent="0%";$("#amy-goal-bar").style.width="0%";$("#amy-goal-saved").textContent="נחסכו "+money(0);$("#amy-goal-target").textContent="מתוך "+money(0);$("#amy-goal-message").textContent="מוסיפים חלום חדש למשפחה.";$("#amy-goal-save").textContent="הוספת יעד החיסכון";renderAmyGoalList();$("#amy-goal-name").focus();
 }
 function renderDreamsPage(){
  const active=sharedDreams.filter(d=>Number(d.target)>Number(d.saved)).length;
@@ -398,13 +412,15 @@ async function saveAmyGoal(){
  if(!Number.isFinite(target)||target<=0||target>100000000){$("#amy-goal-message").textContent="כדאי להזין יעד חיסכון גדול מאפס.";return}
  if(!Number.isFinite(saved)||saved<0||saved>100000000){$("#amy-goal-message").textContent="בדקו את הסכום שכבר חסכנו.";return}
  if(!name){$("#amy-goal-message").textContent="כדאי לתת לחלום שם.";return}
- const dream={id:sharedDreams[0]?.id||"amy-main-goal",name,target,saved};
- $("#amy-goal-save").disabled=true;$("#amy-goal-message").textContent="שומרת ומסנכרנת את החלום…";
+ const existing=sharedDreams.find(x=>x.id===editingDreamId);
+ const dream={id:existing?.id||("amy-dream-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)),name,target,saved};
+ const nextDreams=existing?sharedDreams.map(x=>x.id===existing.id?dream:x):[...sharedDreams,dream];
+ $("#amy-goal-save").disabled=true;$("#amy-goal-message").textContent=existing?"מעדכנת ומסנכרנת את היעד…":"שומרת ומסנכרנת יעד חדש…";
  try{
-  const r=await fetch("/api/dreams",{method:"PUT",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({dreams:[dream]}),cache:"no-store"}),d=await r.json();
-  if(!r.ok)throw Error(d.error||"שמירת החלום נכשלה");
-  sharedDreams=Array.isArray(d.dreams)?d.dreams:[dream];localStorage.setItem(AMY_GOAL_KEY,JSON.stringify(dream));renderAmyGoal();renderDreamsPage();
-  $("#amy-goal-message").textContent=saved>=target?"הגענו ליעד! כל הכבוד לנו 🎉":"החלום נשמר ומסונכרן עם דור! 🌱";
+  const r=await fetch("/api/dreams",{method:"PUT",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({dreams:nextDreams}),cache:"no-store"}),d=await r.json();
+  if(!r.ok)throw Error(d.error||"שמירת היעדים נכשלה");
+  sharedDreams=Array.isArray(d.dreams)?d.dreams:nextDreams;editingDreamId=dream.id;localStorage.setItem(AMY_GOAL_KEY,JSON.stringify(dream));renderAmyGoal(dream);renderDreamsPage();
+  $("#amy-goal-message").textContent=saved>=target?"היעד הושג! כל הכבוד לנו 🎉":(existing?"היעד עודכן":"היעד החדש נשמר") + " ומסונכרן עם דור! 🌱";
  }catch(e){$("#amy-goal-message").textContent="לא הצלחתי לשמור ולסנכרן: "+e.message}
  finally{$("#amy-goal-save").disabled=false}
 }
@@ -641,6 +657,8 @@ function closeChatMenu(){const menu=$("#chat-menu"),toggle=$("#chat-menu-toggle"
 $("#chat-menu-toggle").onclick=e=>{e.stopPropagation();const menu=$("#chat-menu"),toggle=$("#chat-menu-toggle"),opening=menu.classList.contains("hidden");menu.classList.toggle("hidden",!opening);toggle.setAttribute("aria-expanded",String(opening))};
 document.addEventListener("click",e=>{if(!e.target.closest("#chat-menu-wrap"))closeChatMenu()});
 $("#amy-goal-save").onclick=saveAmyGoal;
+$("#amy-goal-add").onclick=startNewAmyGoal;
+document.addEventListener("click",e=>{const edit=e.target.closest("[data-amy-dream-edit]");if(!edit)return;const dream=sharedDreams.find(d=>d.id===edit.dataset.amyDreamEdit);if(dream)renderAmyGoal(dream)});
 $("#dreams-open").onclick=openDreamsPage;
 $("#dreams-back").onclick=closeDreamsPage;
 $("#refresh-dashboard").onclick=loadDashboard;
