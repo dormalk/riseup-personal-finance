@@ -265,11 +265,14 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
       account: a.accountNickname || a.bankName || "חשבון",
       currentBalance: num(a.currentBalance),
       currentBalanceUpdatedAt: a.currentBalanceUpdatedAt || null,
-      predictedBalance: num(a.futurePredictedBalance),
+      riseupPredictedBalance: num(a.futurePredictedBalance),
       billedUntilDate: num(a.amountToBeBilledUntilFuturePredictionDate),
       fixedPredictedUntilDate: num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
-      formulaExpectedBalance: num(a.currentBalance) - num(a.amountToBeBilledUntilFuturePredictionDate) - num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
-      formulaDifference: num(a.futurePredictedBalance) - (num(a.currentBalance) - num(a.amountToBeBilledUntilFuturePredictionDate) - num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate)),
+      // RiseUp's signed amounts: negative = expense, positive = income.
+      // Add signed movements to the current balance so expenses reduce it.
+      formulaExpectedBalance: num(a.currentBalance) + num(a.amountToBeBilledUntilFuturePredictionDate) + num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
+      predictedBalance: num(a.currentBalance) + num(a.amountToBeBilledUntilFuturePredictionDate) + num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
+      formulaDifference: num(a.futurePredictedBalance) - (num(a.currentBalance) + num(a.amountToBeBilledUntilFuturePredictionDate) + num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate)),
       knownTransactions: Array.isArray(a.transactionsBilledUntilFuturePredictionDate) ? a.transactionsBilledUntilFuturePredictionDate : [],
       fixedTransactions: Array.isArray(a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate) ? a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate : []
     })) : [];
