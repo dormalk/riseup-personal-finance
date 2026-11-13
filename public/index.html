@@ -264,10 +264,17 @@ async function loadForecast(){
   const date=(d.futureDateForPrediction||"").split("-").reverse().join(".");
   const rows=d.accounts.map(a=>'<div class="insight"><strong><button type="button" class="bank-account-link" data-bank-toggle="'+escapeHtml(a.bank||"חשבון בנק")+'" aria-expanded="false">'+escapeHtml(a.bank||"חשבון בנק")+'</button> · '+escapeHtml(a.account)+' · '+money(a.predictedBalance)+'</strong><span>יתרה נוכחית: '+money(a.currentBalance)+' · חיובים ידועים נטו: '+money(a.billedUntilDate)+' · תנועות קבועות נטו: '+money(a.fixedPredictedUntilDate)+'</span><small>עודכן בבנק: '+escapeHtml(a.currentBalanceUpdatedAt||"לא צוין")+'</small></div>').join("");
   const detailRows=items=>items.length?items.map(t=>'<div class="insight"><strong>'+escapeHtml(t.businessName)+' · '+(t.isIncome?'+':'−')+money(t.amount)+'</strong><small>'+escapeHtml(t.date||"תאריך לא צוין")+' · '+escapeHtml(t.account)+'</small></div>').join(""):'<div class="empty">אין תנועות ידועות להצגה.</div>';
-  const renderBankTransactions=items=>{
-    const banks=[...new Set(items.map(t=>t.bank||"חשבון בנק"))];
-    if(!banks.length)return '<div class="empty">אין תנועות ידועות להצגה.</div>';
-    return banks.map((bank,i)=>'<div class="forecast-bank-detail" data-bank-panel="'+escapeHtml(bank)+'" hidden>'+detailRows(items.filter(t=>(t.bank||"חשבון בנק")===bank))+'</div>').join("");
+  const renderBankTransactions=(knownItems,fixedItems)=>{
+    const banks=[...new Set([...knownItems,...fixedItems].map(t=>t.bank||"חשבון בנק"))];
+    if(!banks.length)return '';
+    return banks.map(bank=>{
+      const known=knownItems.filter(t=>(t.bank||"חשבון בנק")===bank);
+      const fixed=fixedItems.filter(t=>(t.bank||"חשבון בנק")===bank);
+      return '<section class="forecast-bank-detail" data-bank-panel="'+escapeHtml(bank)+'" hidden style="display:none">'+
+        '<h3>חיובים ידועים עד 2 בחודש הבא (כולל אשראי)</h3>'+detailRows(known)+
+        '<h3>תנועות קבועות ש־RiseUp צופה עד התאריך</h3>'+detailRows(fixed)+
+        '</section>';
+    }).join("");
    };
    const formulaTotal=(d.accounts||[]).reduce((sum,a)=>sum+Number(a.formulaExpectedBalance||0),0);
   const formulaDiff=Number(d.totalPredictedBalance)-formulaTotal;
@@ -282,8 +289,7 @@ async function loadForecast(){
    '<h3>פירוט לפי חשבון</h3>'+rows+
    '<details class="forecast-diagnostics" style="margin:16px 0;padding:12px;border:1px solid #e3eae3;border-radius:12px"><summary style="cursor:pointer;font-weight:700">אבחון חישוב התחזית</summary><div class="insight"><strong>תאריך שנשלח ל־RiseUp: '+escapeHtml(d.futureDateForPrediction||"לא צוין")+'</strong><small>חשבונות שהתקבלו: '+d.accounts.length+' · סכום התחזיות לחשבונות: '+money(d.totalPredictedBalance)+' · סכום לפי חישוב Growise מהתנועות הבודדות: '+money(formulaTotal)+' · פער כולל: '+money(formulaDiff)+'</small></div>'+diagnosticRows+'</details>'+
 
-   '<h3>חיובים ידועים עד 2 בחודש הבא (כולל אשראי)</h3>'+renderBankTransactions(d.knownTransactions||[])+
-   '<h3>תנועות קבועות ש־RiseUp צופה עד התאריך</h3>'+detailRows(d.fixedTransactions||[])+
+   renderBankTransactions(d.knownTransactions||[],d.fixedTransactions||[])+
    '<section class="forecast-budget-note"><h3>תקציבי קטגוריות שנכללו בחישוב</h3>'+
    (budgetAvailable?'<div class="insight"><strong>יתרה שנותרה בתקציבי ההוצאות: '+money(budgetReserve)+'</strong><small>הסכום הזה הופחת מהתחזית הראשית. הוצאות שכבר בוצעו נחשבות כחלק מהיתרה הנוכחית או מחיובי האשראי, ולכן מופחת רק התקציב שטרם נוצל.</small></div>'+reserveRows:'<div class="empty">נתוני ניצול התקציבים לא התקבלו, ולכן אי אפשר לחשב יתרה לאחר תקציבי קטגוריות.</div>')+
    '</section><div class="insight"><small>חשוב: RiseUp כוללת בתחזית הבנק עסקאות ידועות לפי מועד החיוב (לרבות חיובי אשראי) והוצאות/הכנסות קבועות חזויות. הוצאות משתנות שעדיין לא בוצעו אינן כלולות. התחזית כוללת רק חשבונות שיתרותיהם עודכנו ביומיים האחרונים; היא אינה תומכת באשראי מתגלגל ועלולה להשתנות.</small></div>';
