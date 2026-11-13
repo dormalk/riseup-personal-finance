@@ -288,11 +288,18 @@ async function loadForecast(){
    (budgetAvailable?'<div class="insight"><strong>יתרה שנותרה בתקציבי ההוצאות: '+money(budgetReserve)+'</strong><small>הסכום הזה הופחת מהתחזית הראשית. הוצאות שכבר בוצעו נחשבות כחלק מהיתרה הנוכחית או מחיובי האשראי, ולכן מופחת רק התקציב שטרם נוצל.</small></div>'+reserveRows:'<div class="empty">נתוני ניצול התקציבים לא התקבלו, ולכן אי אפשר לחשב יתרה לאחר תקציבי קטגוריות.</div>')+
    '</section><div class="insight"><small>חשוב: RiseUp כוללת בתחזית הבנק עסקאות ידועות לפי מועד החיוב (לרבות חיובי אשראי) והוצאות/הכנסות קבועות חזויות. הוצאות משתנות שעדיין לא בוצעו אינן כלולות. התחזית כוללת רק חשבונות שיתרותיהם עודכנו ביומיים האחרונים; היא אינה תומכת באשראי מתגלגל ועלולה להשתנות.</small></div>';
   const toggle=$("#reserve-toggle");if(toggle)toggle.addEventListener("click",()=>{const details=$("#reserve-details");details.hidden=!details.hidden;toggle.setAttribute("aria-expanded",String(!details.hidden))});
-  content.querySelectorAll("[data-bank-toggle]").forEach(btn=>btn.addEventListener("click",()=>{
+  content.onclick=(event)=>{
+    const btn=event.target.closest("[data-bank-toggle]");
+    if(!btn||!content.contains(btn))return;
     const selected=btn.getAttribute("data-bank-toggle");
-    content.querySelectorAll("[data-bank-toggle]").forEach(b=>b.setAttribute("aria-expanded",String(b===btn)));
-    content.querySelectorAll("[data-bank-panel]").forEach(p=>p.hidden=p.getAttribute("data-bank-panel")!==selected);
-   }));
+    content.querySelectorAll("[data-bank-toggle]").forEach(b=>b.setAttribute("aria-expanded",String(b.getAttribute("data-bank-toggle")===selected)));
+    content.querySelectorAll("[data-bank-panel]").forEach(p=>{
+      const show=p.getAttribute("data-bank-panel")===selected;
+      p.hidden=!show;
+      p.style.display=show?"block":"none";
+    });
+   };
+   content.querySelectorAll("[data-bank-panel]").forEach(p=>{p.hidden=true;p.style.display="none"});
   return d;
  }catch(e){content.textContent="לא הצלחתי לטעון את התחזית: "+e.message}
 }
