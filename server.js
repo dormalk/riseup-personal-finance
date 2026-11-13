@@ -165,7 +165,8 @@ function summarizeBudget(budget, transactions) {
     income, expenses, net: income-expenses, plannedExpenses,
     budgetReserveTotal: categories.reduce((sum,c)=>sum+(c.remaining||0),0),
     categories: categories.slice(0,30), transactionCount,
-    transactionsAvailable: Boolean(txs)
+    // get_budget also carries category actuals; use them as a fallback if get_transactions is unavailable.
+    transactionsAvailable: Boolean(txs) || envelopes.some(env => Array.isArray(env.actuals))
   };
 }
 
@@ -249,9 +250,9 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
     const match = /^(\d{4})-(\d{2})$/.exec(month);
     if (!match) throw new Error("Invalid RiseUp budget month");
     const year = Number(match[1]), monthNumber = Number(match[2]);
-    // Predict the actual bank balance on the first day of the following month,
-    // including known card billings and fixed transactions up to and including that date.
-    const nextMonthDate = new Date(Date.UTC(year, monthNumber, 1));
+    // Predict through the end of the 2nd of the following month, inclusive.
+    // RiseUp's prediction includes known billings and future fixed income/expenses through that date.
+    const nextMonthDate = new Date(Date.UTC(year, monthNumber, 2));
     const futureDateForPrediction = nextMonthDate.getUTCFullYear() + "-" +
       String(nextMonthDate.getUTCMonth()+1).padStart(2,"0") + "-" +
       String(nextMonthDate.getUTCDate()).padStart(2,"0");
@@ -260,22 +261,31 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
       callRiseup("get_transactions", { cashflowMonth: month, maxTransactions: 5000 }).catch(() => null)
     ]);
     const budgetSummary = summarizeBudget(budget, transactions);
-    const accounts = Array.isArray(prediction?.accounts) ? prediction.accounts.map(a => ({
-      bank: a.bankName || "חשבון בנק",
-      account: a.accountNickname || a.bankName || "חשבון",
-      currentBalance: num(a.currentBalance),
-      currentBalanceUpdatedAt: a.currentBalanceUpdatedAt || null,
-      riseupPredictedBalance: num(a.futurePredictedBalance),
-      billedUntilDate: num(a.amountToBeBilledUntilFuturePredictionDate),
-      fixedPredictedUntilDate: num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
-      // RiseUp's signed amounts: negative = expense, positive = income.
-      // Add signed movements to the current balance so expenses reduce it.
-      formulaExpectedBalance: num(a.currentBalance) + num(a.amountToBeBilledUntilFuturePredictionDate) + num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
-      predictedBalance: num(a.currentBalance) + num(a.amountToBeBilledUntilFuturePredictionDate) + num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
-      formulaDifference: num(a.futurePredictedBalance) - (num(a.currentBalance) + num(a.amountToBeBilledUntilFuturePredictionDate) + num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate)),
-      knownTransactions: Array.isArray(a.transactionsBilledUntilFuturePredictionDate) ? a.transactionsBilledUntilFuturePredictionDate : [],
-      fixedTransactions: Array.isArray(a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate) ? a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate : []
-    })) : [];
+    const accounts = Array.isArray(prediction?.accounts) ? prediction.accounts.map(a => {
+      const knownTransactions = Array.isArray(a.transactionsBilledUntilFuturePredictionDate) ? a.transactionsBilledUntilFuturePredictionDate : [];
+      const fixedTransactions = Array.isArray(a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate) ? a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate : [];
+      // Transaction amounts are positive; isIncome determines direction. Net = expenses minus incomes.
+      const knownNetFromItems = knownTransactions.reduce((sum,t)=>sum+(t.isIncome?-1:1)*abs(t.amount),0);
+      const fixedNetFromItems = fixedTransactions.reduce((sum,t)=>sum+(t.isIncome?-1:1)*abs(t.amount),0);
+      const formulaExpectedBalance = num(a.currentBalance) - knownNetFromItems - fixedNetFromItems;
+      return {
+        bank: a.bankName || "חשבון בנק",
+        account: a.accountNickname || a.bankName || "חשבון",
+        currentBalance: num(a.currentBalance),
+        currentBalanceUpdatedAt: a.currentBalanceUpdatedAt || null,
+        riseupPredictedBalance: num(a.futurePredictedBalance),
+        billedUntilDate: num(a.amountToBeBilledUntilFuturePredictionDate),
+        fixedPredictedUntilDate: num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
+        // RiseUp's documented prediction is the bank-balance source of truth; independently reconcile it from itemized movements.
+        formulaExpectedBalance,
+        predictedBalance: num(a.futurePredictedBalance),
+        formulaDifference: num(a.futurePredictedBalance) - formulaExpectedBalance,
+        knownNetFromItems,
+        fixedNetFromItems,
+        knownTransactions,
+        fixedTransactions
+      };
+    }) : [];
     const totalCurrentBalance = accounts.length ? accounts.reduce((sum,a)=>sum+a.currentBalance,0) : null;
     const totalPredictedBalance = accounts.length ? accounts.reduce((sum,a)=>sum+a.predictedBalance,0) : null;
     const knownTransactions = accounts.flatMap(a => a.knownTransactions.map(t => ({
@@ -303,8 +313,12 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
       budgetReserveTotal: budgetSummary.transactionsAvailable ? budgetReserveTotal : null,
       fixedExpenseReserveTotal,
       totalReserved: budgetSummary.transactionsAvailable ? totalReserved : null,
+      // Remaining expense-category budgets are additional future spending, after known card bills and fixed movements.
       availableAfterBudgetReserve: budgetSummary.transactionsAvailable && totalPredictedBalance !== null
         ? totalPredictedBalance - budgetReserveTotal : null,
+      totalPredictedBalanceAfterBudgets: budgetSummary.transactionsAvailable && totalPredictedBalance !== null
+        ? totalPredictedBalance - budgetReserveTotal : null,
+      calculationReconciled: accounts.every(a => Math.abs(a.formulaDifference) < 0.01),
       reserveCategories,
       generatedAt: new Date().toISOString(),
       available: accounts.length > 0
