@@ -145,6 +145,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 }
 
 
+.forecast-balance-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}.forecast-balance-item{min-width:0;border:1px solid var(--line);border-radius:15px;padding:14px;background:#fff}.forecast-balance-item .kpi-label{font-size:11px;line-height:1.4;min-height:2.8em}.forecast-balance-item .kpi-value{font-size:clamp(16px,2.8vw,23px);white-space:nowrap}@media(max-width:380px){.forecast-balance-comparison{gap:7px}.forecast-balance-item{padding:10px 8px}.forecast-balance-item .kpi-label{font-size:10px}.forecast-balance-item .kpi-value{font-size:15px}}
 /* Account status: compare projected month-end balance with current balance */
 .account-status-delta,.amy-account-delta{font-size:13px;font-weight:650;opacity:.78;margin-top:3px;line-height:1.4}
 .account-status-kpi .kpi-value,.amy-account-status .amy-available-value{font-size:clamp(30px,6vw,40px)!important;font-weight:950!important;line-height:1.15!important;margin-top:8px!important;letter-spacing:-.4px}
@@ -285,7 +286,7 @@ async function loadForecast(){
   const planningBalance=budgetReserve!==null?Number(d.availableAfterBudgetReserve):null;
   content.innerHTML=
    '<div class="account-forecast-primary"><div class="kpi-label">כמה צפוי להישאר אחרי חיובים ותקציבי קטגוריות ב־2 בחודש הבא · '+escapeHtml(date)+'</div><div class="account-forecast-value">'+(budgetAvailable?money(d.availableAfterBudgetReserve):'לא ניתן לחשב')+'</div><div class="kpi-note">'+(budgetAvailable?'התחזית כוללת חיובי אשראי, הכנסות והוצאות קבועות צפויות, ומפחיתה גם את יתרת תקציבי ההוצאות שטרם נוצלה.':'תחזית הבנק זמינה, אך נתוני ניצול התקציבים לא התקבלו ולכן לא מוצגת יתרה לאחר תקציבים.')+'</div></div>'+
-   '<div class="kpis" style="grid-template-columns:1fr 1fr;margin:12px 0"><div class="kpi"><div class="kpi-label">יתרת הבנק הצפויה לפני תקציבים</div><div class="kpi-value">'+money(d.totalPredictedBalance)+'</div></div><div class="kpi"><div class="kpi-label">יתרה נוכחית בחשבונות שנכללו</div><div class="kpi-value">'+money(d.totalCurrentBalance)+'</div></div></div>'+
+   '<div class="forecast-balance-comparison"><div class="forecast-balance-item"><div class="kpi-label">יתרת הבנק הצפויה לפני תקציבים</div><div class="kpi-value">'+money(d.totalPredictedBalance)+'</div></div><div class="forecast-balance-item"><div class="kpi-label">יתרה נוכחית בחשבונות שנכללו</div><div class="kpi-value">'+money(d.totalCurrentBalance)+'</div></div></div>'+
    '<h3>פירוט לפי חשבון</h3>'+rows+
    '<details class="forecast-diagnostics" style="margin:16px 0;padding:12px;border:1px solid #e3eae3;border-radius:12px"><summary style="cursor:pointer;font-weight:700">אבחון חישוב התחזית</summary><div class="insight"><strong>תאריך שנשלח ל־RiseUp: '+escapeHtml(d.futureDateForPrediction||"לא צוין")+'</strong><small>חשבונות שהתקבלו: '+d.accounts.length+' · סכום התחזיות לחשבונות: '+money(d.totalPredictedBalance)+' · סכום לפי חישוב Growise מהתנועות הבודדות: '+money(formulaTotal)+' · פער כולל: '+money(formulaDiff)+'</small></div>'+diagnosticRows+'</details>'+
 
