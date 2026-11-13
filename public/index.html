@@ -176,13 +176,17 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 .bank-account-link{border:0;background:transparent;color:#245d39;text-decoration:underline;text-underline-offset:3px;font:inherit;font-weight:900;cursor:pointer;padding:0}.bank-account-link[aria-expanded="true"]{color:#0c7b3c}.forecast-bank-detail{margin:8px 0 14px}.forecast-bank-detail[hidden]{display:none}.forecast-bank-detail .insight{margin-top:7px}.forecast-bank-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.forecast-bank-tabs button{border:1px solid #d7e2d9;background:#fff;color:#244d35;border-radius:999px;padding:8px 14px;font:inherit;font-weight:800;cursor:pointer}.forecast-bank-tabs button[aria-expanded="true"]{background:#e8f3ea;border-color:#8bb79a}.forecast-bank-detail{margin:8px 0 14px}.forecast-bank-detail[hidden]{display:none}.forecast-bank-detail .insight{margin-top:7px}.account-forecast-primary{padding:19px 20px;border:1px solid #b9d5c2;border-radius:17px;background:linear-gradient(140deg,#f0f8f1,#fff);margin-bottom:12px}.account-forecast-value{font-size:clamp(30px,5vw,40px);font-weight:900;color:var(--green);letter-spacing:-1px;margin:7px 0;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}.forecast-budget-note{margin-top:16px;padding:14px;border:1px solid #e4e9e4;border-radius:14px;background:#fafcfa}.forecast-budget-note h3{margin-top:0!important}.amy-account-status .amy-available-label{font-weight:800}.amy-account-status .amy-available-value{font-size:30px;font-weight:900;direction:ltr;text-align:right;color:var(--green);margin:8px 0}.amy-account-status{padding:17px;border:1px solid #c7ddcd;border-radius:16px;background:#f4faf5;margin-bottom:12px}.amy-account-status .amy-available-note{font-size:12px;line-height:1.6;color:#52665a}@media(max-width:620px){.account-forecast-primary{padding:15px}.account-forecast-value{font-size:30px}}
 
 .category-select-label{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700}.category-select-label input{width:17px;height:17px;accent-color:var(--green);margin:0;flex:0 0 auto}.category-selection-summary{padding:13px 15px;margin:0 0 14px;border:1px solid var(--line);border-radius:13px;background:#f7faf7;line-height:1.65}.category-selection-summary>div{font-size:12px;color:var(--muted);margin-top:4px}.category-selection-trend{font-size:12px;color:var(--text)!important}
+
+.dreams-open{font-weight:800;white-space:nowrap}.dreams-count{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#eaf4ed;color:#174c38;font-size:11px;margin-right:4px}
+.dreams-page{margin:12px 0 24px}.dreams-page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.dreams-page-head h2{font-size:21px;margin:0}.dream-card{border:1px solid #e3ebe5;border-radius:16px;padding:16px;margin:10px 0;background:linear-gradient(135deg,#fff,#f8fbf8)}.dream-card-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.dream-card h3{margin:0;font-size:16px}.dream-card-progress{height:10px;border-radius:20px;background:#e9efea;overflow:hidden;margin:13px 0 8px}.dream-card-progress span{display:block;height:100%;background:linear-gradient(90deg,#d88eaf,#80b58d);border-radius:20px}.dream-card-meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}.dreams-empty{padding:24px 16px;text-align:center;border:1px dashed #cfdcd2;border-radius:15px;color:var(--muted);line-height:1.7}
+
 </style>
 </head>
 <body>
 <div class="shell">
 <header class="topbar">
   <div class="brand"><img src="/icon.svg" alt=""><div><div class="brand-name">Growise</div><div class="brand-sub">Grow your money wisely</div></div></div>
-  <div class="top-actions"><span class="status" id="connection-status">לא מחובר</span><button class="soft-btn hidden" id="install">התקנה</button><button class="icon-btn hidden" id="logout">יציאה</button><button type="button" class="soft-btn clear-chat hidden" id="new-chat" title="ניקוי השיחה והתחלה מחדש" aria-label="ניקוי שיחה">🧹 ניקוי שיחה</button></div>
+  <div class="top-actions"><button type="button" class="icon-btn dreams-open hidden" id="dreams-open" aria-label="החלומות של איימי">🛍️ <span class="dreams-count" id="dreams-count">0</span></button><span class="status" id="connection-status">לא מחובר</span><button class="soft-btn hidden" id="install">התקנה</button><button class="icon-btn hidden" id="logout">יציאה</button><button type="button" class="soft-btn clear-chat hidden" id="new-chat" title="ניקוי השיחה והתחלה מחדש" aria-label="ניקוי שיחה">🧹 ניקוי שיחה</button></div>
 </header>
 <section class="login-screen" id="login">
   <img src="/icon.svg" alt="">
@@ -196,6 +200,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
   <div class="login-form"><label for="key">מפתח הגישה הפרטי</label><input id="key" type="password" autocomplete="current-password" placeholder="הזינו מפתח גישה"><div class="error" id="login-error" role="status">הזינו את מפתח הגישה ולחצו על דור או איימי כדי להתחבר.</div></div>
 </section>
 <main class="main hidden" id="chat">
+  <section class="dreams-page hidden" id="dreams-page"><div class="dreams-page-head"><h2>החלומות שלנו ✨</h2><button type="button" class="soft-btn" id="dreams-back">← חזרה</button></div><p class="muted">היעדים שאיימי הגדירה וההתקדמות שלנו בדרך אליהם.</p><div id="dreams-list"><div class="empty">טוען חלומות…</div></div></section>
   <section class="amy-dashboard hidden" id="amy-dashboard">
     <div class="amy-hero"><h2 id="amy-greeting">היי איימי 🌷</h2><p id="amy-summary">בואי נראה יחד איך הכסף שלנו מתנהל החודש.</p><div class="amy-actions"><button type="button" id="amy-refresh">↻ רענון נתונים</button></div></div>
     <div class="amy-kpis">
@@ -219,7 +224,7 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
         <div><label for="amy-goal-saved-input">כמה כבר חסכנו? (₪)</label><input id="amy-goal-saved-input" type="number" min="0" max="100000000" step="1" placeholder="0"></div>
         <button class="wide" type="button" id="amy-goal-save">שמירת יעד החיסכון</button>
       </div>
-      <div class="amy-goal-note">ההתקדמות מתעדכנת לפי הסכום שתזינו כאן; היא אינה נמשכת אוטומטית מיתרות הבנק. היעד נשמר בדפדפן ובמכשיר הזה.</div>
+      <div class="amy-goal-note">ההתקדמות מתעדכנת לפי הסכום שתזינו כאן; היא אינה נמשכת אוטומטית מיתרות הבנק. היעד נשמר במקום משותף, כך שדור ואיימי רואים את אותם נתונים.</div>
     </div>
     <div class="amy-encouragement" id="amy-encouragement">טוען את תמונת המצב שלנו…</div>
     
@@ -254,7 +259,7 @@ const $=s=>document.querySelector(s);let token="",history=[],installPrompt=null,
 const setStatus=t=>$("#connection-status").textContent=t;
 function addMessage(role,text,suggestions=[]){const row=document.createElement("div");row.className="message "+role;const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=role==="user"?(profile==="amy"?"א":"אתה"):"כ";const body=document.createElement("div");body.style.flex="1";const bubble=document.createElement("div");bubble.className="bubble";bubble.innerHTML=String(text??"").split("\n").map(line=>{const safe=escapeHtml(line);return /^\s*🔴/.test(line)?'<div class="overrun-line">'+safe+'</div>':safe}).join("<br>");body.append(bubble);if(role==="assistant"){const tools=document.createElement("div");tools.className="message-tools";const copy=document.createElement("button");copy.className="tiny";copy.textContent="העתקת תשובה";copy.onclick=async()=>{try{await navigator.clipboard.writeText(text);copy.textContent="הועתק ✓";setTimeout(()=>copy.textContent="העתקת תשובה",1500)}catch{copy.textContent="לא ניתן להעתיק"}};tools.append(copy);body.append(tools);if(Array.isArray(suggestions)&&suggestions.length){const followups=document.createElement("div");followups.className="followup-buttons";suggestions.slice(0,3).forEach(q=>{const b=document.createElement("button");b.type="button";b.className="followup";b.dataset.followup=q;b.textContent=q;followups.append(b)});body.append(followups)}}row.append(avatar,body);$("#messages").append(row);row.scrollIntoView({behavior:"smooth",block:"end"})}
 function selectProfile(value){profile=value;["dor","amy"].forEach(p=>{const b=$("#choose-"+p);b.classList.toggle("selected",p===value);b.setAttribute("aria-pressed",String(p===value))});$("#login-error").textContent=(value==="amy"?"נבחרה תצוגת איימי.":"נבחרה תצוגת דור.")+" עכשיו הזינו את מפתח הגישה והתחברו."; }
-function showChat(){ $("#login").classList.add("hidden");$("#chat").classList.remove("hidden");$("#new-chat").classList.remove("hidden");$("#logout").classList.remove("hidden");$("#prompts").classList.remove("hidden");$("#welcome").classList.toggle("hidden",profile==="amy");$("#dashboard").classList.toggle("hidden",profile==="amy");$("#amy-dashboard").classList.toggle("hidden",profile!=="amy");if(profile==="amy"){ $("#welcome").classList.add("hidden");$("#prompts").innerHTML='<button class="prompt" data-q="תסבירי לי בפשטות איך אנחנו עומדים החודש מבחינה כספית"><strong>💗 איך אנחנו החודש?</strong><span>תמונת מצב פשוטה וברורה</span></button><button class="prompt" data-q="איפה אפשר לחסוך קצת כסף בלי לפגוע בדברים החשובים?"><strong>🌱 איפה אפשר לחסוך?</strong><span>רעיונות קטנים ומעשיים</span></button><button class="prompt" data-q="האם כדאי לי לקנות משהו שעולה 200 שקלים לפי התקציב שלנו?"><strong>🛍️ לפני שקונים</strong><span>נעצור לבדוק אם זה מתאים לתקציב</span></button><button class="prompt" data-q="תני לי טיפ אחד פשוט שיעזור לנו לחסוך השבוע"><strong>✨ טיפ חיסכון לשבוע</strong><span>צעד קטן שעושה הבדל</span></button>';}else{$("#prompts").innerHTML='<button class="prompt" data-q="תן לי תמונת מצב פשוטה של הכסף שלי החודש ומה הכי חשוב לדעת"><strong>📍 איפה אני עומד החודש?</strong><span>תמונה קצרה וברורה של המצב</span></button><button class="prompt" data-q="מהן שלוש ההוצאות הכי גדולות שלי החודש?"><strong>🧾 על מה יצא הכי הרבה?</strong><span>נמצא את ההוצאות הבולטות</span></button><button class="prompt" data-q="איפה אפשר לחסוך החודש בלי לוותר על דברים חשובים?"><strong>🌱 איפה אפשר לחסוך?</strong><span>רעיונות שמתאימים לשגרה שלי</span></button><button class="prompt" data-q="כמה צפוי להישאר לי עד סוף החודש ומה כדאי לקחת בחשבון?"><strong>🔮 איך אסיים את החודש?</strong><span>תחזית פשוטה עד סוף החודש</span></button>';}document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q));$("#question").placeholder=profile==="amy"?"שאלי אותי על התקציב, קנייה או רעיון לחיסכון…":"דור, מה תרצה לבדוק לגבי הכסף שלך?";$("#question").focus();loadDashboard()}
+function showChat(){ $("#login").classList.add("hidden");$("#chat").classList.remove("hidden");$("#new-chat").classList.remove("hidden");$("#logout").classList.remove("hidden");$("#prompts").classList.remove("hidden");$("#welcome").classList.toggle("hidden",profile==="amy");$("#dashboard").classList.toggle("hidden",profile==="amy");$("#amy-dashboard").classList.toggle("hidden",profile!=="amy");if(profile==="amy"){ $("#welcome").classList.add("hidden");$("#prompts").innerHTML='<button class="prompt" data-q="תסבירי לי בפשטות איך אנחנו עומדים החודש מבחינה כספית"><strong>💗 איך אנחנו החודש?</strong><span>תמונת מצב פשוטה וברורה</span></button><button class="prompt" data-q="איפה אפשר לחסוך קצת כסף בלי לפגוע בדברים החשובים?"><strong>🌱 איפה אפשר לחסוך?</strong><span>רעיונות קטנים ומעשיים</span></button><button class="prompt" data-q="האם כדאי לי לקנות משהו שעולה 200 שקלים לפי התקציב שלנו?"><strong>🛍️ לפני שקונים</strong><span>נעצור לבדוק אם זה מתאים לתקציב</span></button><button class="prompt" data-q="תני לי טיפ אחד פשוט שיעזור לנו לחסוך השבוע"><strong>✨ טיפ חיסכון לשבוע</strong><span>צעד קטן שעושה הבדל</span></button>';}else{$("#prompts").innerHTML='<button class="prompt" data-q="תן לי תמונת מצב פשוטה של הכסף שלי החודש ומה הכי חשוב לדעת"><strong>📍 איפה אני עומד החודש?</strong><span>תמונה קצרה וברורה של המצב</span></button><button class="prompt" data-q="מהן שלוש ההוצאות הכי גדולות שלי החודש?"><strong>🧾 על מה יצא הכי הרבה?</strong><span>נמצא את ההוצאות הבולטות</span></button><button class="prompt" data-q="איפה אפשר לחסוך החודש בלי לוותר על דברים חשובים?"><strong>🌱 איפה אפשר לחסוך?</strong><span>רעיונות שמתאימים לשגרה שלי</span></button><button class="prompt" data-q="כמה צפוי להישאר לי עד סוף החודש ומה כדאי לקחת בחשבון?"><strong>🔮 איך אסיים את החודש?</strong><span>תחזית פשוטה עד סוף החודש</span></button>';}document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q));$("#question").placeholder=profile==="amy"?"שאלי אותי על התקציב, קנייה או רעיון לחיסכון…":"דור, מה תרצה לבדוק לגבי הכסף שלך?";$("#question").focus();loadSharedDreams();loadDashboard()}
 const money=v=>new Intl.NumberFormat("he-IL",{style:"currency",currency:"ILS",maximumFractionDigits:0}).format(Number(v)||0);
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function loadForecast(){
@@ -316,19 +321,64 @@ async function loadForecast(){
 }
 
 const AMY_GOAL_KEY="kis-amy-savings-goal-v1";
+let sharedDreams=[];
 function readAmyGoal(){try{return JSON.parse(localStorage.getItem(AMY_GOAL_KEY)||"null")||{name:"",target:0,saved:0}}catch{return{name:"",target:0,saved:0}}}
-function renderAmyGoal(){
- const g=readAmyGoal(),target=Math.max(0,Number(g.target)||0),saved=Math.max(0,Number(g.saved)||0),pct=target?Math.min(100,Math.round(saved/target*100)):0;
+function renderAmyGoal(g=sharedDreams[0]||{name:"",target:0,saved:0}){
+ const target=Math.max(0,Number(g.target)||0),saved=Math.max(0,Number(g.saved)||0),pct=target?Math.min(100,Math.round(saved/target*100)):0;
  $("#amy-goal-name").value=g.name||"";$("#amy-goal-target-input").value=target||"";$("#amy-goal-saved-input").value=saved||"";
  $("#amy-goal-percent").textContent=pct+"%";$("#amy-goal-bar").style.width=pct+"%";
  $("#amy-goal-saved").textContent="נחסכו "+money(saved);$("#amy-goal-target").textContent="מתוך "+money(target);
- $("#amy-goal-message").textContent=!target?"בוחרים מטרה שחשובה לנו, ומתחילים להתקדם אליה בקצב שמתאים למשפחה.":pct>=100?"איזה יופי! הגענו ליעד של "+(g.name||"החיסכון שלנו")+" 🎉": "כבר התקדמנו "+pct+"% בדרך ל"+(g.name||"מטרה שלנו")+"! נשארו עוד "+money(Math.max(0,target-saved))+". כל סכום קטן מקרב אותנו.";
+ $("#amy-goal-message").textContent=!target?"בוחרים מטרה שחשובה לנו, ומתחילים להתקדם אליה בקצב שמתאים למשפחה.":pct>=100?"איזה יופי! הגענו ליעד של "+(g.name||"החיסכון שלנו")+" 🎉":"כבר התקדמנו "+pct+"% בדרך ל"+(g.name||"מטרה שלנו")+"! נשארו עוד "+money(Math.max(0,target-saved))+". כל סכום קטן מקרב אותנו.";
 }
-function saveAmyGoal(){
+function renderDreamsPage(){
+ const active=sharedDreams.filter(d=>Number(d.target)>Number(d.saved)).length;
+ $("#dreams-count").textContent=String(active);
+ $("#dreams-open").classList.toggle("hidden",profile!=="dor");
+ $("#dreams-list").innerHTML=sharedDreams.length?sharedDreams.map(d=>{const target=Number(d.target)||0,saved=Number(d.saved)||0,pct=target?Math.min(100,Math.round(saved/target*100)):0;return '<article class="dream-card"><div class="dream-card-head"><h3>✨ '+escapeHtml(d.name)+'</h3><strong>'+pct+'%</strong></div><div class="dream-card-progress"><span style="width:'+pct+'%"></span></div><div class="dream-card-meta"><span>נחסכו '+money(saved)+'</span><strong>יעד '+money(target)+'</strong></div><div class="dream-card-meta" style="margin-top:7px"><span>'+(saved>=target?'הגשמנו את החלום! 🎉':'נותרו '+money(Math.max(0,target-saved)))+'</span></div></article>'}).join(""):'<div class="dreams-empty">עדיין אין חלומות משותפים. כשאיימי תגדיר יעד חיסכון, הוא יופיע כאן 💚</div>';
+}
+async function loadSharedDreams(){
+ try{
+  const r=await fetch("/api/dreams",{credentials:"same-origin",cache:"no-store"}),d=await r.json();
+  if(!r.ok)throw Error(d.error||"טעינת החלומות נכשלה");
+  sharedDreams=Array.isArray(d.dreams)?d.dreams:[];
+  if(profile==="amy"&&!sharedDreams.length){
+   const legacy=readAmyGoal();
+   if(legacy.name&&Number(legacy.target)>0){
+    const migrated={id:"amy-main-goal",name:legacy.name,target:Number(legacy.target),saved:Number(legacy.saved)||0};
+    const save=await fetch("/api/dreams",{method:"PUT",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({dreams:[migrated]}),cache:"no-store"});
+    const saved=await save.json();if(!save.ok)throw Error(saved.error||"העברת החלום הקיים נכשלה");sharedDreams=saved.dreams||[migrated];
+   }
+  }
+  renderAmyGoal();renderDreamsPage();
+ }catch(e){
+  renderDreamsPage();
+  if(profile==="amy")$("#amy-goal-message").textContent="לא הצלחתי לסנכרן את החלום המשותף: "+e.message;
+  else $("#dreams-list").innerHTML='<div class="dreams-empty">לא ניתן לטעון את החלומות כרגע. '+escapeHtml(e.message)+'</div>';
+ }
+}
+async function saveAmyGoal(){
  const name=$("#amy-goal-name").value.trim(),target=Number($("#amy-goal-target-input").value),saved=Number($("#amy-goal-saved-input").value);
  if(!Number.isFinite(target)||target<=0||target>100000000){$("#amy-goal-message").textContent="כדאי להזין יעד חיסכון גדול מאפס.";return}
  if(!Number.isFinite(saved)||saved<0||saved>100000000){$("#amy-goal-message").textContent="בדקו את הסכום שכבר חסכנו.";return}
- try{localStorage.setItem(AMY_GOAL_KEY,JSON.stringify({name,target,saved}));renderAmyGoal();$("#amy-goal-message").textContent=saved>=target?"הגענו ליעד! כל הכבוד לנו 🎉":"היעד נשמר! כל צעד קטן מקרב אותנו אליו 🌱"}catch{$("#amy-goal-message").textContent="לא הצלחתי לשמור את היעד בדפדפן הזה."}
+ if(!name){$("#amy-goal-message").textContent="כדאי לתת לחלום שם.";return}
+ const dream={id:sharedDreams[0]?.id||"amy-main-goal",name,target,saved};
+ $("#amy-goal-save").disabled=true;$("#amy-goal-message").textContent="שומרת ומסנכרנת את החלום…";
+ try{
+  const r=await fetch("/api/dreams",{method:"PUT",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({dreams:[dream]}),cache:"no-store"}),d=await r.json();
+  if(!r.ok)throw Error(d.error||"שמירת החלום נכשלה");
+  sharedDreams=Array.isArray(d.dreams)?d.dreams:[dream];localStorage.setItem(AMY_GOAL_KEY,JSON.stringify(dream));renderAmyGoal();renderDreamsPage();
+  $("#amy-goal-message").textContent=saved>=target?"הגענו ליעד! כל הכבוד לנו 🎉":"החלום נשמר ומסונכרן עם דור! 🌱";
+ }catch(e){$("#amy-goal-message").textContent="לא הצלחתי לשמור ולסנכרן: "+e.message}
+ finally{$("#amy-goal-save").disabled=false}
+}
+function openDreamsPage(){
+ if(profile!=="dor")return;
+ ["#welcome","#dashboard","#prompts","#messages",".composer-wrap"].forEach(s=>$(s)?.classList.add("hidden"));
+ $("#dreams-page").classList.remove("hidden");renderDreamsPage();
+}
+function closeDreamsPage(){
+ $("#dreams-page").classList.add("hidden");
+ ["#welcome","#dashboard","#prompts","#messages",".composer-wrap"].forEach(s=>$(s)?.classList.remove("hidden"));
 }
 
 
@@ -518,6 +568,8 @@ async function connect(){if(busy)return;token=$("#key").value.trim();if(!profile
 async function send(q){q=q.trim();if(!q||busy)return;busy=true;history.push({role:"user",content:q});addMessage("user",q);$("#welcome").classList.add("hidden");$("#prompts").classList.add("hidden");$("#question").value="";$("#send").disabled=true;const typing=document.createElement("div");typing.className="typing";typing.textContent="Growise בודקת את הנתונים ומנסחת תשובה…";$("#messages").append(typing);typing.scrollIntoView({behavior:"smooth",block:"end"});try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({messages:history.slice(-12),profile}),cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d.error||"הבקשה נכשלה");history.push({role:"assistant",content:d.reply});addMessage("assistant",d.reply,d.suggestions||[])}catch(e){addMessage("assistant","לא הצלחתי להשלים את הבקשה: "+e.message+"\nאפשר לנסות שוב או להתחיל שיחה חדשה.");history.pop()}finally{typing.remove();busy=false;$("#send").disabled=false;$("#question").focus()}}
 
 $("#amy-goal-save").onclick=saveAmyGoal;
+$("#dreams-open").onclick=openDreamsPage;
+$("#dreams-back").onclick=closeDreamsPage;
 $("#refresh-dashboard").onclick=loadDashboard;
 $("#amy-refresh").onclick=loadDashboard;
 
@@ -534,6 +586,8 @@ $("#logout").onclick=()=>{
   });
   $("#messages").replaceChildren();
   $("#amy-forecast-panel").classList.add("hidden");
+  $("#dreams-page").classList.add("hidden");
+  $("#dreams-open").classList.add("hidden");
   $("#amy-dashboard").classList.add("hidden");
   $("#dashboard").classList.remove("hidden");
   $("#prompts").innerHTML='<button class="prompt" data-q="תן לי תמונת מצב של התקציב שלי החודש"><strong>📊 תמונת מצב חודשית</strong><span>איך אני עומד בתקציב?</span></button><button class="prompt" data-q="באילו קטגוריות הוצאתי הכי הרבה החודש?"><strong>🧾 לאן הכסף הולך?</strong><span>הקטגוריות עם ההוצאות הגבוהות</span></button><button class="prompt" data-q="האם יש חריגות או הוצאות חריגות שכדאי שאכיר?"><strong>🔎 דברים שכדאי לשים לב אליהם</strong><span>חריגות והוצאות לא שגרתיות</span></button><button class="prompt" data-q="תן לי שלוש הצעות מעשיות לחיסכון על בסיס הנתונים שלי"><strong>🌱 איך אפשר לחסוך?</strong><span>רעיונות שמבוססים על הנתונים שלי</span></button>';
