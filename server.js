@@ -291,11 +291,11 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
     const totalCurrentBalance = accounts.length ? accounts.reduce((sum,a)=>sum+a.currentBalance,0) : null;
     const totalPredictedBalance = accounts.length ? accounts.reduce((sum,a)=>sum+a.predictedBalance,0) : null;
     const knownTransactions = accounts.flatMap(a => a.knownTransactions.map(t => ({
-      account: a.account, businessName: t.businessName || "עסקה ידועה",
+      bank: a.bank, account: a.account, businessName: t.businessName || "עסקה ידועה",
       amount: num(t.amount), isIncome: Boolean(t.isIncome), date: t.billingDate || null
     })));
     const fixedTransactions = accounts.flatMap(a => a.fixedTransactions.map(t => ({
-      account: a.account, businessName: t.businessName || "תנועה קבועה",
+      bank: a.bank, account: a.account, businessName: t.businessName || "תנועה קבועה",
       amount: num(t.amount), isIncome: Boolean(t.isIncome), date: t.predictedBillingDate || null
     })));
     const reserveCategories = budgetSummary.categories
