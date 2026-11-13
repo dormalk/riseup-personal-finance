@@ -288,12 +288,14 @@ async function loadForecast(){
    '<div class="account-forecast-primary"><div class="kpi-label">כמה צפוי להישאר אחרי חיובים ותקציבי קטגוריות ב־2 בחודש הבא · '+escapeHtml(date)+'</div><div class="account-forecast-value">'+(budgetAvailable?money(d.availableAfterBudgetReserve):'לא ניתן לחשב')+'</div><div class="kpi-note">'+(budgetAvailable?'התחזית כוללת חיובי אשראי, הכנסות והוצאות קבועות צפויות, ומפחיתה גם את יתרת תקציבי ההוצאות שטרם נוצלה.':'תחזית הבנק זמינה, אך נתוני ניצול התקציבים לא התקבלו ולכן לא מוצגת יתרה לאחר תקציבים.')+'</div></div>'+
    '<div class="forecast-balance-comparison"><div class="forecast-balance-item"><div class="kpi-label">יתרת הבנק הצפויה לפני תקציבים</div><div class="kpi-value">'+money(d.totalPredictedBalance)+'</div></div><div class="forecast-balance-item"><div class="kpi-label">יתרה נוכחית בחשבונות שנכללו</div><div class="kpi-value">'+money(d.totalCurrentBalance)+'</div></div></div>'+
    '<h3>פירוט לפי חשבון</h3>'+rows+
-   '<details class="forecast-diagnostics" style="margin:16px 0;padding:12px;border:1px solid #e3eae3;border-radius:12px"><summary style="cursor:pointer;font-weight:700">אבחון חישוב התחזית</summary><div class="insight"><strong>תאריך שנשלח ל־RiseUp: '+escapeHtml(d.futureDateForPrediction||"לא צוין")+'</strong><small>חשבונות שהתקבלו: '+d.accounts.length+' · סכום התחזיות לחשבונות: '+money(d.totalPredictedBalance)+' · סכום לפי חישוב Growise מהתנועות הבודדות: '+money(formulaTotal)+' · פער כולל: '+money(formulaDiff)+'</small></div>'+diagnosticRows+'</details>'+
-
-   renderBankTransactions(d.knownTransactions||[],d.fixedTransactions||[])+
+   '<details class="forecast-diagnostics" style="margin:16px 0;padding:12px;border:1px solid #e3eae3;border-radius:12px"><summary style="cursor:pointer;font-weight:700">אבחון חישוב התחזית</summary><div class="insight"><strong>תאריך שנשלח ל־RiseUp: '+escapeHtml(d.futureDateForPrediction||"לא צוין")+'</strong><small>חשבונות שהתקבלו: '+d.accounts.length+' · סכום התחזיות לחשבונות: '+money(d.totalPredictedBalance)+' · סכום לפי חישוב Growise מהתנועות הבודדות: '+money(formulaTotal)+' · פער כולל: '+money(formulaDiff)+'</small></div>'+diagnosticRows+
    '<section class="forecast-budget-note"><h3>תקציבי קטגוריות שנכללו בחישוב</h3>'+
    (budgetAvailable?'<div class="insight"><strong>יתרה שנותרה בתקציבי ההוצאות: '+money(budgetReserve)+'</strong><small>הסכום הזה הופחת מהתחזית הראשית. הוצאות שכבר בוצעו נחשבות כחלק מהיתרה הנוכחית או מחיובי האשראי, ולכן מופחת רק התקציב שטרם נוצל.</small></div>'+reserveRows:'<div class="empty">נתוני ניצול התקציבים לא התקבלו, ולכן אי אפשר לחשב יתרה לאחר תקציבי קטגוריות.</div>')+
-   '</section><div class="insight"><small>חשוב: RiseUp כוללת בתחזית הבנק עסקאות ידועות לפי מועד החיוב (לרבות חיובי אשראי) והוצאות/הכנסות קבועות חזויות. הוצאות משתנות שעדיין לא בוצעו אינן כלולות. התחזית כוללת רק חשבונות שיתרותיהם עודכנו ביומיים האחרונים; היא אינה תומכת באשראי מתגלגל ועלולה להשתנות.</small></div>';
+   '</section>'+
+   '</details>'+
+
+   renderBankTransactions(d.knownTransactions||[],d.fixedTransactions||[])+
+   '<div class="insight"><small>חשוב: RiseUp כוללת בתחזית הבנק עסקאות ידועות לפי מועד החיוב (לרבות חיובי אשראי) והוצאות/הכנסות קבועות חזויות. הוצאות משתנות שעדיין לא בוצעו אינן כלולות. התחזית כוללת רק חשבונות שיתרותיהם עודכנו ביומיים האחרונים; היא אינה תומכת באשראי מתגלגל ועלולה להשתנות.</small></div>';
   const toggle=$("#reserve-toggle");if(toggle)toggle.addEventListener("click",()=>{const details=$("#reserve-details");details.hidden=!details.hidden;toggle.setAttribute("aria-expanded",String(!details.hidden))});
   content.onclick=(event)=>{
     const btn=event.target.closest("[data-bank-toggle]");
