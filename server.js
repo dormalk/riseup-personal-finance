@@ -143,8 +143,10 @@ function summarizeBudget(budget, transactions) {
     // Tracking-category budgets are the user's category-level spending limits.
     // Fixed commitments are handled separately by RiseUp's future-balance forecast.
     if (type === "trackingCategory" && !isSaving) {
+      // Budget reference defines positive originalAmount as an expense target and negative as income.
+      const categoryPlan = num(env.originalAmount);
       const name = normalizeCategoryName(env.details?.trackingCategory?.name || env.name || env.title);
-      if (name) plannedByCategory.set(name, (plannedByCategory.get(name) || 0) + planned);
+      if (name && categoryPlan > 0) plannedByCategory.set(name, (plannedByCategory.get(name) || 0) + categoryPlan);
     }
   }
 
