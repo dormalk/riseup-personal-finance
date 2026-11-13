@@ -268,6 +268,8 @@ app.get("/api/forecast", limiter, auth, async (_req, res) => {
       predictedBalance: num(a.futurePredictedBalance),
       billedUntilDate: num(a.amountToBeBilledUntilFuturePredictionDate),
       fixedPredictedUntilDate: num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
+      formulaExpectedBalance: num(a.currentBalance) - num(a.amountToBeBilledUntilFuturePredictionDate) - num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate),
+      formulaDifference: num(a.futurePredictedBalance) - (num(a.currentBalance) - num(a.amountToBeBilledUntilFuturePredictionDate) - num(a.amountFixedPredictedToBeBilledUntilFuturePredictionDate)),
       knownTransactions: Array.isArray(a.transactionsBilledUntilFuturePredictionDate) ? a.transactionsBilledUntilFuturePredictionDate : [],
       fixedTransactions: Array.isArray(a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate) ? a.fixedTransactionsPredictedToBeBilledUntilFuturePredictionDate : []
     })) : [];
