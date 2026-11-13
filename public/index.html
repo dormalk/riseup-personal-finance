@@ -466,21 +466,19 @@ function updateCategorySelectionSummary(d){
  if(!selected.length){summary.innerHTML='<strong>סמנו קטגוריות כדי לחשב סיכום משולב</strong><div>אפשר לבחור קטגוריות גם מתוך שתי הלשוניות.</div>';return;}
  const current=d.current||{},months=Array.isArray(d.previousMonths)?d.previousMonths:[],chosen=new Set(selected);
  const total=(current.categories||[]).filter(x=>chosen.has(x.name)).reduce((sum,x)=>sum+Number(x.actual||0),0);
- const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Jerusalem",day:"2-digit"}).formatToParts(new Date());
- const elapsed=Math.max(1,Number(parts.find(x=>x.type==="day")?.value)||1);
- const monthDays=m=>{const p=String(m||"").match(/^(\d{4})-(\d{2})$/);return p?new Date(Number(p[1]),Number(p[2]),0).getDate():30};
- const currentDaily=total/Math.max(1,Math.min(monthDays(current.month),elapsed));
  const complete=months.length===3&&current.transactionsAvailable&&months.every(m=>m.transactionsAvailable);
  let trend='<div class="category-selection-trend">מגמה: אין מספיק נתוני עסקאות מלאים לשלושת החודשים הקודמים.</div>';
  if(complete){
-  const averageDaily=months.reduce((sum,m)=>sum+(m.categories||[]).filter(x=>chosen.has(x.name)).reduce((v,x)=>v+Number(x.actual||0),0)/monthDays(m.month),0)/3;
-  if(averageDaily>0){
-   const change=currentDaily-averageDaily,pct=Math.round(change/averageDaily*100),direction=pct>0?'עלייה':pct<0?'ירידה':'ללא שינוי',arrow=pct>0?'↑':pct<0?'↓':'→';
-   trend='<div class="category-selection-trend">מגמה משולבת: '+arrow+' '+direction+' של '+Math.abs(pct)+'% בקצב ההוצאה היומי · עכשיו '+money(currentDaily)+' ליום, לעומת ממוצע '+money(averageDaily)+' ליום בשלושת החודשים המלאים הקודמים.</div>';
+  const monthlyTotals=months.map(m=>(m.categories||[]).filter(x=>chosen.has(x.name)).reduce((sum,x)=>sum+Number(x.actual||0),0));
+  const averageMonthly=monthlyTotals.reduce((sum,n)=>sum+n,0)/monthlyTotals.length;
+  if(averageMonthly>0){
+   const change=total-averageMonthly,pct=Math.round(change/averageMonthly*100),direction=pct>0?'עלייה':pct<0?'ירידה':'ללא שינוי',arrow=pct>0?'↑':pct<0?'↓':'→';
+   trend='<div class="category-selection-trend">מגמה חודשית: '+arrow+' '+direction+' של '+Math.abs(pct)+'% · החודש עד כה: '+money(total)+' לעומת ממוצע חודשי של '+money(averageMonthly)+' בשלושת החודשים המלאים הקודמים.</div><div class="category-selection-trend">ההשוואה היא בין ההוצאה שנצברה החודש עד היום לבין ממוצע של חודשים מלאים.</div>';
   }else trend='<div class="category-selection-trend">אין בסיס היסטורי להשוואת הקטגוריות שנבחרו.</div>';
  }
- summary.innerHTML='<strong>'+selected.length+' קטגוריות נבחרו · סך הוצאות בפועל: '+money(total)+'</strong>'+trend;
+ summary.innerHTML='<strong>'+selected.length+' קטגוריות נבחרו · סך הוצאות בפועל החודש: '+money(total)+'</strong>'+trend;
 }
+
 async function loadDashboard(){
  $("#dash-loading").classList.remove("hidden");$("#dash-error").classList.add("hidden");$("#dash-content").classList.add("hidden");
  try{
