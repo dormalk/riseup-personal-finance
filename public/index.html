@@ -236,7 +236,6 @@ textarea{display:block;width:100%;border:0;outline:0;resize:none;min-height:52px
 
     <div class="amy-goal">
       <div class="amy-genie-banner"><div class="amy-genie-art" aria-hidden="true"><span class="genie-spark genie-spark-one">✦</span><span class="genie-spark genie-spark-two">✧</span><span class="genie-lamp">🪔</span><span class="genie-character">🧞‍♂️</span></div><div class="amy-genie-copy"><div class="amy-genie-title">בקשי משאלה מהג'יני</div><p>ספרי לנו מה החלום שלך, ונעזור לך להפוך אותו לתוכנית שאפשר להגשים ✨</p></div></div>
-      <div class="amy-goal-top"><span id="amy-goal-percent" class="badge">0%</span></div>
       <p id="amy-goal-message" style="font-size:13px;line-height:1.6;margin:9px 0 0">בוחרים מטרה וחוסכים אליה צעד אחר צעד.</p>
       <div class="amy-goal-progress"><span id="amy-goal-bar"></span></div>
       <div class="amy-goal-stats"><span id="amy-goal-saved">נחסכו ₪0</span><strong id="amy-goal-target">מתוך ₪0</strong></div>
@@ -353,7 +352,7 @@ function renderAmyGoal(g){
   if(selected.id)editingDreamId=selected.id;
   const target=Math.max(0,Number(selected.target)||0),saved=Math.max(0,Number(selected.saved)||0),pct=target?Math.min(100,Math.round(saved/target*100)):0;
  $("#amy-goal-name").value=selected.name||"";$("#amy-goal-target-input").value=target||"";$("#amy-goal-saved-input").value=saved||"";
- $("#amy-goal-percent").textContent=pct+"%";$("#amy-goal-bar").style.width=pct+"%";
+$("#amy-goal-bar").style.width=pct+"%";
  $("#amy-goal-saved").textContent="נחסכו "+money(saved);$("#amy-goal-target").textContent="מתוך "+money(target);
  $("#amy-goal-message").textContent=!target?"בוחרים מטרה שחשובה לנו, ומתחילים להתקדם אליה בקצב שמתאים למשפחה.":pct>=100?"איזה יופי! הגענו ליעד של "+(selected.name||"החיסכון שלנו")+" 🎉":"כבר התקדמנו "+pct+"% בדרך ל"+(selected.name||"מטרה שלנו")+"! נשארו עוד "+money(Math.max(0,target-saved))+". כל סכום קטן מקרב אותנו.";
  $("#amy-goal-save").textContent=selected.id?"עדכון יעד החיסכון":"הוספת יעד החיסכון";
@@ -364,7 +363,7 @@ function renderAmyGoalList(){
  root.innerHTML=sharedDreams.length?sharedDreams.map(d=>{const target=Number(d.target)||0,saved=Number(d.saved)||0,pct=target?Math.min(100,Math.round(saved/target*100)):0;return '<div class="amy-goal-item"><div class="amy-goal-item-info"><strong>'+escapeHtml(d.name)+'</strong><span>'+money(saved)+' מתוך '+money(target)+' · '+pct+'%</span></div><button type="button" data-amy-dream-edit="'+escapeHtml(d.id)+'">'+(d.id===editingDreamId?"בעריכה":"עריכה") +'</button></div>'}).join(""):'<div class="amy-goal-note">עדיין לא הוספנו יעדים. אפשר להתחיל מהחלום הראשון שלנו.</div>';
 }
 function startNewAmyGoal(){
- editingDreamId=null;$("#amy-goal-name").value="";$("#amy-goal-target-input").value="";$("#amy-goal-saved-input").value="0";$("#amy-goal-percent").textContent="0%";$("#amy-goal-bar").style.width="0%";$("#amy-goal-saved").textContent="נחסכו "+money(0);$("#amy-goal-target").textContent="מתוך "+money(0);$("#amy-goal-message").textContent="מוסיפים חלום חדש למשפחה.";$("#amy-goal-save").textContent="הוספת יעד החיסכון";renderAmyGoalList();$("#amy-goal-name").focus();
+ editingDreamId=null;$("#amy-goal-name").value="";$("#amy-goal-target-input").value="";$("#amy-goal-saved-input").value="0";$("#amy-goal-bar").style.width="0%";$("#amy-goal-saved").textContent="נחסכו "+money(0);$("#amy-goal-target").textContent="מתוך "+money(0);$("#amy-goal-message").textContent="מוסיפים חלום חדש למשפחה.";$("#amy-goal-save").textContent="הוספת יעד החיסכון";renderAmyGoalList();$("#amy-goal-name").focus();
 }
 function renderDreamsPage(){
  const active=sharedDreams.filter(d=>Number(d.target)>Number(d.saved)).length;
